@@ -1,0 +1,64 @@
+
+.page {
+    width:1280px;
+    padding: 0.5in 0.25in;
+    margin: 0px auto;
+}
+.space-between-component {
+    margin-bottom: 0.3cm;
+}
+.description-table {
+    width: 100%;
+}
+
+.description-table > tr:first-child {
+    font-size: 18px;
+    text-align: right;
+}
+.description-table > tr:last-child {
+    /* text-align: right; */
+    font-size: 18px;
+    font-weight: bolder;
+}
+.description-table > tr > td:nth-child(even){
+    text-align: right;
+}
+.description-table > tr:not(:last-child) > td {
+    /* background-color: #e3e3e3; */
+}
+/* .description-table > tr:not(:first-child) > th:not(:last-child) , .description-table > tr:not(:first-child) > td:not(:last-child), .description-table > tr:last-child > td:nth-child(odd) {
+    border-right:2px solid #7c7c7c;
+} */
+.description-table > tr > td:nth-child(even){
+    border-right:2px solid #7c7c7c;
+}
+.description-table > tr > td:last-child{
+    border-right: 0px;
+}
+.description-table > tr:not(:first-child) > th, .description-table > tr:not(:first-child) > td {
+    border-bottom:2px solid #7c7c7c;
+}
+.description-table > tr > th, .description-table > tr > td {
+    padding:6px
+}
+.description-table > tr > td, .description-table > tr >th {
+    font-size: 1.5rem;
+}
+.borderBottom-in-table {
+    border-bottom:1px solid #7c7c7c;
+}
+
+.company-logo {
+    width: 220px;
+    height: 60px;
+}
+.title-in-slip {
+    font-size: 18px;
+    font-weight: bolder;
+  }
+.detail-in-slip {
+    font-size:16px;
+}
+.A4-Font {
+    font-size:1.5rem;
+}

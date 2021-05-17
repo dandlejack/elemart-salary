@@ -1,25 +1,30 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import logo from './logo.svg';
 import './App.css';
-
+import { Layout, Menu } from 'antd'
+import { SiderComponent } from './components/SiderComponent'
+import { Switch, Route } from 'react-router-dom'
+import { RoutePath } from './utils/RouterPath';
+import { Page } from './types/Page';
+import { HeaderComponent } from './components/HeaderComponent';
+import { Footer } from 'antd/lib/layout/layout';
 function App() {
+  useEffect(() => {
+    console.log(window.outerHeight)
+  }, [window.outerHeight]);
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Layout>
+      <Layout>
+        <SiderComponent />
+        <Layout className='right-content'>
+          <Switch>
+            {RoutePath.map((page: Page) => {
+              return <Route path={page.path} component={page.component} exact></Route>
+            })}
+          </Switch>
+        </Layout>
+      </Layout>
+    </Layout>
   );
 }
 
