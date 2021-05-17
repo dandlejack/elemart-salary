@@ -10,6 +10,7 @@ export const SaralyListPage: React.FC = () => {
         ReportApi.findSalaryList({}).then(res=>{
             setDataSource(res)
         })
+        document.title = 'รายงานเงินเดือน'
         return () => {
             
         };

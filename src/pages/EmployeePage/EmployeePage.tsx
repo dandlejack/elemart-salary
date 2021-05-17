@@ -12,6 +12,7 @@ export const EmployeePage: React.FC = () => {
         EmployeeApi.findAllEmployees().then(data=>{
             setDataSource(data)
         })
+        document.title = 'รายชื่อพนักงาน'
         return () => {
             
         };

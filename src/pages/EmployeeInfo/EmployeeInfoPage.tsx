@@ -36,10 +36,12 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
             }).then(res => {
                 setReportMonthList(res)
             })
-            await EmployeeApi.findEmployeeByEmployeeId(id).then(data => {
+            const results = await EmployeeApi.findEmployeeByEmployeeId(id).then(data => {
                 setDataSource(data)
                 return data
             })
+            document.title = results.firstname + ' ' + results.lastname
+
         }
         getData()
         return () => {
@@ -76,7 +78,6 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 year_of_report: reportMonth?.toString().split('/')[1]
             }
         }).then(res => {
-            console.log(dataSource.firstname + ' ' + dataSource.lastname)
             const result = AddCommaOfObject(res)
             setTotalSocialandLate(result)
         })

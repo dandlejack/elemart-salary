@@ -10,21 +10,23 @@ import { HeaderComponent } from './components/HeaderComponent';
 import { Footer } from 'antd/lib/layout/layout';
 function App() {
   useEffect(() => {
-    console.log(window.outerHeight)
-  }, [window.outerHeight]);
+    document.title = 'เงินเดือน'
+  }, []);
   return (
-    <Layout>
+    <>
       <Layout>
-        <SiderComponent />
-        <Layout className='right-content'>
-          <Switch>
-            {RoutePath.map((page: Page) => {
-              return <Route path={page.path} component={page.component} exact></Route>
-            })}
-          </Switch>
+        <Layout>
+          <SiderComponent />
+          <Layout className='right-content'>
+            <Switch>
+              {RoutePath.map((page: Page) => {
+                return <Route path={page.path} component={page.component} exact></Route>
+              })}
+            </Switch>
+          </Layout>
         </Layout>
       </Layout>
-    </Layout>
+    </>
   );
 }
 
