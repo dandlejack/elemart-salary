@@ -10,7 +10,7 @@ import { TableProps } from '../../types/EditTableTypes';
 
 
 
-export const EditableTable: React.FC<TableProps> = props => {
+export const EditableTable: React.FC<TableProps> = (props: any) => {
     const [dataSources, setDataSource] = useState(props.oldData)
     const [count, setCount] = useState(props.startCount)
     const [showData, setShowData] = useState(0)
@@ -59,7 +59,9 @@ export const EditableTable: React.FC<TableProps> = props => {
     };
 
     const handleSave = (row: any) => {
-        row.social_security = row.salary >= 15000 ? 750 : row.salary * 0.05
+        if (props.column[7].key === "social_security" && !props.column[7].editable) {
+            row.social_security = row.salary >= 15000 ? 750 : row.salary * 0.05
+        }
 
         const newData = [...dataSources];
         const index = newData.findIndex((item: any) => row.key === item.key);

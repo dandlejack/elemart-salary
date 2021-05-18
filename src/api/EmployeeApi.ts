@@ -30,4 +30,10 @@ export class EmployeeApi {
             if(res.data === 'successful') window.location.reload()
         })
     }
+    
+    static async deleteEmployeeByEmployeeId(employee_id:string){
+        const result = await axios.delete(`${EMPLOYEE_API_URL}/`+employee_id).then(res=>{
+             window.location.reload()
+        })
+    }
 }

@@ -1,6 +1,7 @@
 import { Button, Popconfirm } from "antd"
 import React from "react"
 import { Link } from "react-router-dom"
+import { EmployeeApi } from "../api/EmployeeApi"
 import { ReportApi } from "../api/ReportApi"
 
 export const employeeColumn = [
@@ -36,9 +37,9 @@ export const employeeColumn = [
                 <Popconfirm
                     title="คุณต้องการลบรายงานนี้?"
                     onConfirm={() => {
-                        // PostApi.deletePostById(record._id).then(res => {
-                        //     window.location.reload()
-                        // })
+                        EmployeeApi.deleteEmployeeByEmployeeId(record.employee_id).then(res=>{
+                            window.location.reload()
+                        })
                     }}//(record._id)}
                     okText="Yes"
                     cancelText="No"
@@ -145,7 +146,7 @@ export const AddSalaryColumn = [
         key: 'social_security',
         dataIndex: 'social_security',
         dataType: 'number',
-        editable: false
+        editable: true
     },
     {
         title: 'TAX',
