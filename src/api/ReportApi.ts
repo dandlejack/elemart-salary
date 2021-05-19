@@ -3,7 +3,7 @@ import { BACKEND_API } from "../config";
 
 
 const REPORT_API = `${BACKEND_API}/reports`
-
+console.log(REPORT_API)
 export class ReportApi {
     static async addReport(data: Object) {
         await axios.post(`${REPORT_API}/AddReport`, data).then(res => {

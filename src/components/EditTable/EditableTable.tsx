@@ -62,7 +62,7 @@ export const EditableTable: React.FC<TableProps> = (props: any) => {
         if (props.column[7].key === "social_security" && !props.column[7].editable) {
             row.social_security = row.salary >= 15000 ? 750 : row.salary * 0.05
         }
-
+        row.agent_tax = row.agent * 0.05
         const newData = [...dataSources];
         const index = newData.findIndex((item: any) => row.key === item.key);
         const item = newData[index];

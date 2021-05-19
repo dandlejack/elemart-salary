@@ -269,7 +269,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
             <div>
                 <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ประกันสังคมสะสม : {totalSocialandLate.total_security_social} </span>
                 <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*มาสายสะสม : {totalSocialandLate.total_late} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*มาสายสะสม : {totalSocialandLate.total_late} </span>
+                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ขาดสะสม : {totalSocialandLate.total_absent} </span>
                 <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*เงินยืมที่จ่าย : {totalSocialandLate.total_lending} </span>
             </div>
             {/* <div style={{ textAlign: 'right', marginTop: 15 }}>

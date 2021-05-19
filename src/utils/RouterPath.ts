@@ -3,6 +3,7 @@ import { EmployeeInfoPage } from "../pages/EmployeeInfo/EmployeeInfoPage";
 import { EmployeePage } from "../pages/EmployeePage/EmployeePage";
 import { SalaryInfoPage } from "../pages/SalaryListInfoPage/SalaryInfoPage";
 import { SaralyListPage } from "../pages/SalaryListPage/SaralyListPage";
+import { SettingPage } from "../pages/SettingPage/SettingPage";
 import { Page } from "../types/Page";
 
 export const RoutePath: Page[] = [
@@ -35,5 +36,11 @@ export const RoutePath: Page[] = [
         path: '/ReportInfo/:id',
         component: SalaryInfoPage,
         isMenu:false
+    },
+    {
+        pathName: 'Setting',
+        path: '/setting',
+        component: SettingPage,
+        isMenu:true
     },
 ]

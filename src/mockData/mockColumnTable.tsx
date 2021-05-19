@@ -142,6 +142,13 @@ export const AddSalaryColumn = [
         editable: true
     },
     {
+        title: 'โบนัส',
+        key: 'bonus',
+        dataIndex: 'bonus',
+        dataType: 'number',
+        editable: true
+    },
+    {
         title: 'ประกันสังคม',
         key: 'social_security',
         dataIndex: 'social_security',
@@ -180,13 +187,6 @@ export const AddSalaryColumn = [
         title: 'ขาด',
         key: 'absent',
         dataIndex: 'absent',
-        dataType: 'number',
-        editable: true
-    },
-    {
-        title: 'โบนัส',
-        key: 'bonus',
-        dataIndex: 'bonus',
         dataType: 'number',
         editable: true
     },
