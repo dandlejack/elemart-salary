@@ -156,7 +156,7 @@ export const EditableTable: React.FC<TableProps> = (props: any) => {
             scroll={{ x: '100vw', y: '100%' }}
 
         />
-        <AddBtn />
+        {/* <AddBtn /> */}
 
     </div>
 }

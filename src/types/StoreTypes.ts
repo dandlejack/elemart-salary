@@ -71,6 +71,7 @@ export interface IReportProps {
     late: string
     lending: string
     no: string
+    operation?:any
     overtime: string
     salary: string
     social_security: string
