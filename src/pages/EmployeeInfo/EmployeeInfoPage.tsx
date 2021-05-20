@@ -179,7 +179,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 <img className='company-logo' src={logo} />
                 <div style={{ fontSize: 18, marginTop: 10, fontWeight: 'bolder' }}>
                     <h4>ELE-MART CO., LTD.</h4>
-                    <span>62 63 Phraya Suren Rd, Bang Chan, Khlong Sam Wa, Bangkok 10510</span>
+                    <span>62,63 Phraya Suren Rd, Bang Chan, Khlong Sam Wa, Bangkok 10510</span>
                 </div>
             </div>
             <div className='space-between-component1' style={{ width: '100%' }}>
