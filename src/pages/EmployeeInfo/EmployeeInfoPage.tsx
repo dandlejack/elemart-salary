@@ -175,7 +175,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
        
 
         <div style={{ width: 1280, margin: '50px auto', position: 'relative' }} id='page-pdf' ref={ref}>
-            <div className='space-between-component'>
+            <div className='space-between-component' style={{marginBottom:'0.2cm'}}>
                 <img className='company-logo' src={logo} />
                 <div style={{ fontSize: 18, marginTop: 10, fontWeight: 'bolder' }}>
                     <h4>ELE-MART CO., LTD.</h4>
