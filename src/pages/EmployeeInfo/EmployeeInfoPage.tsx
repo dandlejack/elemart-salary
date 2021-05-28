@@ -177,7 +177,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
         <div style={{ width: 1280, margin: '50px auto', position: 'relative' }} id='page-pdf' ref={ref}>
             <div className='space-between-component' style={{marginBottom:'0.2cm'}}>
                 <img className='company-logo' src={logo} />
-                <div style={{ fontSize: 18, marginTop: 10, fontWeight: 'bolder' }}>
+                <div style={{ fontSize: 18, marginTop: 10, fontWeight: 'bolder' }} className='A4-Font'>
                     <h4>ELE-MART CO., LTD.</h4>
                     <span>62,63 Phraya Suren Rd, Bang Chan, Khlong Sam Wa, Bangkok 10510</span>
                 </div>
@@ -190,7 +190,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
             </div>
             <div className='space-between-component'>
             </div>
-            <table className='description-table space-between-component'>
+            <table className='description-table space-between-component A4-Font'>
                 <tr >
                     <th></th>
                     <th></th>
@@ -205,7 +205,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td>เงินเดือน</td>
                     <td>{reportSource.salary}</td>
                     <td>ภาษีเงินได้</td>
-                    <td>{reportSource.tax}</td>
+                    <td>-{reportSource.tax}</td>
                     <td>รวมเงินได้</td>
                     <td>{summaryOfTotal.gross_total}</td>
                 </tr>
@@ -213,15 +213,15 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td>โอที</td>
                     <td>{reportSource.overtime}</td>
                     <td>ประกันสังคม</td>
-                    <td>{reportSource.social_security}</td>
+                    <td>-{reportSource.social_security}</td>
                     <td>รวมเงินหัก</td>
-                    <td>{summaryOfTotal.deuction_total}</td>
+                    <td>-{summaryOfTotal.deuction_total}</td>
                 </tr>
                 <tr>
                     <td>เบี้ยเลี้ยง</td>
                     <td>{reportSource.allowance}</td>
                     <td>มาสาย</td>
-                    <td>{reportSource.late}</td>
+                    <td>-{reportSource.late}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -229,7 +229,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td>น้ำมัน</td>
                     <td>{reportSource.fuel}</td>
                     <td>ขาด</td>
-                    <td>{reportSource.absent}</td>
+                    <td>-{reportSource.absent}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -237,7 +237,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td>นายหน้า</td>
                     <td>{reportSource.agent}</td>
                     <td>ภาษีนายหน้า</td>
-                    <td>{reportSource.agent_tax}</td>
+                    <td>-{reportSource.agent_tax}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -245,7 +245,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td>โบนัส</td>
                     <td>{reportSource.bonus}</td>
                     <td>ภาษีโบนัส</td>
-                    <td>{reportSource.bonus_tax}</td>
+                    <td>-{reportSource.bonus_tax}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -253,7 +253,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td></td>
                     <td></td>
                     <td>เงินยืมบริษัท</td>
-                    <td>{reportSource.lending}</td>
+                    <td>-{reportSource.lending}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -261,7 +261,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td >รวมรายได้</td>
                     <td >{summaryOfTotal.gross_total}</td>
                     <td>รวมรายการหัก</td>
-                    <td >{summaryOfTotal.deuction_total}</td>
+                    <td >-{summaryOfTotal.deuction_total}</td>
                     <td>เงินได้สุทธิ</td>
                     <td >{summaryOfTotal.total}</td>
                 </tr>
