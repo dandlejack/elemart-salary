@@ -20,7 +20,6 @@ export const PettyCashInfoPage: React.FC<{ match: any }> = ({ match }) => {
     })
     const [editable, setEditable] = useState(false)
     const [visiblity, setVisiblity] = useState(false)
-    const [countRefresh, setCountRefresh] = useState(5)
     useEffect(() => {
         const fetchData = async () => {
             const result = await PettyCashApi.findReportByPettyCashId(id).then(res => res)
@@ -41,9 +40,7 @@ export const PettyCashInfoPage: React.FC<{ match: any }> = ({ match }) => {
         })
 
     }
-    const visiblityClose = () => {
-        history.go(0)
-    }
+    
 
     return <div>
         <HeaderComponent nameOfLinkPath={''} title={dataSource.month_report} />
@@ -65,7 +62,7 @@ export const PettyCashInfoPage: React.FC<{ match: any }> = ({ match }) => {
             <EditableTable column={AddPettyCashColumn} getData={getTableData} oldData={dataSource.attributes} ablePagination={{ disabled: false }} showData={10} startCount={1} formType={'petty-cash'} tableName={'petty-cash'} />
             <Button style={{ width: 150, marginLeft: 10 }} onClick={updateData} type='primary'>Update</Button>
         </>}
-        {visiblity?<CustomResult countTime={5} visibility={visiblity} />:null}
+        {visiblity?<CustomResult title='อัพเดทข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} />:null}
 
     </div>
 }

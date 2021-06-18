@@ -58,7 +58,6 @@ export const EditableTable: React.FC<TableProps> = (props: any) => {
     };
 
     const handleSave = (row: any) => {
-        console.log(row)
         if (props.tableName === 'salary-table') {
             row.social_security = row.salary >= 15000 ? 750 : row.salary * 0.05
             row.agent_tax = row.agent * 0.05

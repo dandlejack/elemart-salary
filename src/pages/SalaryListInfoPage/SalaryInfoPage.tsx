@@ -72,7 +72,6 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 report_id: id
             }
         }).then(res => {
-            console.log(res)
             const filterThaiMonth = monthVal.filter(d => d.key === res[0].month_report.split('/')[0])[0].value
             setMonthReport(filterThaiMonth + ' ' + res[0].month_report.split('/')[1])
             setDataSource(res[0].attributes)
@@ -145,7 +144,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
         {/* <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} /> */}
 
         {canEdit?<Button style={{width:150,marginLeft:10}} onClick={updateData} type='primary'>Update</Button>:null}
-        {visiblity?<CustomResult countTime={5} visibility={visiblity} />:null}
+        {visiblity?<CustomResult title='อัพเดทข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} />:null}
 
     </>
 }

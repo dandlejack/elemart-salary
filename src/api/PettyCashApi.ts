@@ -11,11 +11,10 @@ export class PettyCashApi {
     }
 
     static async insertPettyCashReport(data:PettyCashDataProps) {
-        console.log(data)
         const result = await axios.post(`${PETTYCASH_API_URL}/addreport`,data).then(res=>{
-            console.log(res)
-            
+            return true
         })
+        return result
     }
 
     static async findReportByPettyCashId(pettyCashId:string){
@@ -33,7 +32,6 @@ export class PettyCashApi {
     }
 
     static async deleteReportByPettyCashId(pettyCashId:string) {
-        console.log(pettyCashId)
         const result = await axios.delete(`${PETTYCASH_API_URL}/${pettyCashId}`).then(res=>{
             if(res.data === 1) return true
         })

@@ -6,9 +6,10 @@ const REPORT_API = `${BACKEND_API}/reports`
 
 export class ReportApi {
     static async addReport(data: Object) {
-        await axios.post(`${REPORT_API}/AddReport`, data).then(res => {
-            if (res.status === 201) window.location.reload()
+        const result = await axios.post(`${REPORT_API}/AddReport`, data).then(res => {
+            if (res.status === 201) return true
         })
+        return result
     }
 
     static async findAllReports(params: any) {
@@ -28,7 +29,6 @@ export class ReportApi {
         const result = await axios.get(`${REPORT_API}/findTotalSecuritySocialAndLate`, { params }).then(res => {
             if (res.status === 200) return res.data
         })
-        console.log(result)
         return result
     }
     static async deleteReportById(report_id: string) {

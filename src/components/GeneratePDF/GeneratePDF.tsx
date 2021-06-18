@@ -13,7 +13,6 @@ export const GeneratePDF: React.FC<IProps> = ({ document, fullname, reportMonth 
     const [ready, setReady] = useState(false);
     const printPdf = () => {
         const input = document
-        console.log(input)
         if (input !== null) {
             html2canvas(input, { scale:2 }).then(canvas => {
                 

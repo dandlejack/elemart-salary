@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Button, DatePicker, Input, notification } from 'antd'
-import { EmployeeApi } from '../../api/EmployeeApi'
 import { EditableTable } from '../EditTable/EditableTable'
 import { AddPettyCashColumn } from '../../mockData/mockColumnTable'
-import { ReportApi } from '../../api/ReportApi'
-import { IDataProps, PettyCashAttributesProps, PettyCashDataProps } from '../../types/StoreTypes'
-import moment from 'moment'
+import { PettyCashAttributesProps, PettyCashDataProps } from '../../types/StoreTypes'
 import { PettyCashApi } from '../../api/PettyCashApi'
+import { CustomResult } from '../CustomResult/CustomResult'
 
 export const AddPettyCashForm: React.FC = () => {
     const [dataTable, setdataTable] = useState({
@@ -14,14 +12,20 @@ export const AddPettyCashForm: React.FC = () => {
         month_report: '',
         year_of_report: ''
     } as PettyCashDataProps)
+    const [visiblity, setVisiblity] = useState(false)
     const [alertInputMonth, setAlertInputMonth] = useState(false);
 
     const onSave = async () => {
-        await PettyCashApi.insertPettyCashReport(dataTable)
+        if (dataTable.attributes.length > 0 && dataTable.month_report !== '') {
+            await PettyCashApi.insertPettyCashReport(dataTable).then(res => {
+                setVisiblity(true)
+            })
+        } else {
+            setAlertInputMonth(!alertInputMonth)
+        }
     }
 
     const notificationOpen = () => {
-        setAlertInputMonth(!alertInputMonth)
         notification['error']({
             message: 'เกิดข้อผิดพลาด',
             description: 'กรุณาเลือกเดือน-ปีของรายงาน',
@@ -30,16 +34,17 @@ export const AddPettyCashForm: React.FC = () => {
             },
             duration: 3
         })
+        setAlertInputMonth(!alertInputMonth)
     }
 
     const getTableData = (data: Array<PettyCashAttributesProps>) => {
-        setdataTable({...dataTable,attributes:data})
+        setdataTable({ ...dataTable, attributes: data })
     }
 
 
     return <div>
         <div style={{ marginBottom: 15 }}>
-            <span>เดือนที่</span> <DatePicker format={'MM/YYYY'} picker="month" onChange={(date: any, dateString: string) => setdataTable({...dataTable,month_report:dateString,year_of_report:dateString.split('/')[1]})} />
+            <span>เดือนที่</span> <DatePicker format={'MM/YYYY'} picker="month" onChange={(date: any, dateString: string) => setdataTable({ ...dataTable, month_report: dateString, year_of_report: dateString.split('/')[1] })} />
 
         </div>
         <div>
@@ -48,5 +53,7 @@ export const AddPettyCashForm: React.FC = () => {
         <div style={{ margin: '15px auto', textAlign: 'center' }}>
             <Button type='primary' onClick={onSave}>เพิ่มรายงานเงินเดือน</Button>
         </div>
+        {visiblity ? <CustomResult title='เพิ่มข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} /> : null}
+        {alertInputMonth?notificationOpen():null}
     </div>
 }

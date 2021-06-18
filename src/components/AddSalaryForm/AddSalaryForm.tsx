@@ -16,7 +16,6 @@ export const AddSalaryForm: React.FC = () => {
     useEffect(() => {
         const pushkeydown = (event: any) => {
             if (event.code === "Enter" || event.code === "NumpadEnter") {
-                console.log("Enter key was pressed. Run your function.");
                 setKeyDown(true)
                 event.preventDefault();
             }

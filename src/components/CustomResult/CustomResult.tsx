@@ -7,9 +7,10 @@ import { CustomModal } from "../CustomModal/CustomModal"
 interface IResultProps {
     countTime: number 
     visibility:boolean
+    title:string
 }
 
-export const CustomResult: React.FC<IResultProps> = ({ countTime,visibility }) => {
+export const CustomResult: React.FC<IResultProps> = ({ countTime,visibility,title }) => {
     const [countRefresh, setCountRefresh] = useState(countTime)
     const history = useHistory()
     let countToReset = countTime
@@ -25,6 +26,6 @@ export const CustomResult: React.FC<IResultProps> = ({ countTime,visibility }) =
         history.go(0)
     }
 
-    return <CustomModal modalTitle='' modalType="update-successful" modalForm={<Result status="success" title='อัพเดทข้อมูลเรียบร้อย' subTitle={`จะรีเฟรชภายใน ${countRefresh} วินาที`} extra={[<Button type='primary' onClick={e => history.go(0)}>Refresh</Button>]} />} modalWidth={800} modalVisible={visibility} getClose={visiblityClose} />
+    return <CustomModal modalTitle='' modalType="update-successful" modalForm={<Result status="success" title={title} subTitle={`จะปิดภายใน ${countRefresh} วินาที`} extra={[<Button type='primary' onClick={e => history.go(0)}>Refresh</Button>]} />} modalWidth={800} modalVisible={visibility} getClose={visiblityClose} />
 
 }
