@@ -7,6 +7,7 @@ import { IReportProps } from '../../types/StoreTypes'
 import { generateExcel } from '../../components/Excel/ExcelComponent'
 import { EditableCell } from '../../components/EditTable/EditableCell'
 import { EditableTable } from '../../components/EditTable/EditableTable'
+import { CustomResult } from '../../components/CustomResult/CustomResult'
 const monthVal = [
     {
         key: '01',
@@ -63,6 +64,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
     const [dataSource, setDataSource] = useState([] as Array<IReportProps>);
     const [monthReport, setMonthReport] = useState('');
     const [count, setCount] = useState(0);
+    const [visiblity, setVisiblity] = useState(false)
     const [canEdit, setCanEdit] = useState(false)
     useEffect(() => {
         ReportApi.findAllReports({
@@ -114,7 +116,9 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
         const data = {
             attributes:dataSource
         }
-        ReportApi.updateReportByReportID(id,data)
+        ReportApi.updateReportByReportID(id,data).then(res=>{
+            setVisiblity(!visiblity)
+        })
     }
     
     return <>
@@ -141,6 +145,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
         {/* <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} /> */}
 
         {canEdit?<Button style={{width:150,marginLeft:10}} onClick={updateData} type='primary'>Update</Button>:null}
+        {visiblity?<CustomResult countTime={5} visibility={visiblity} />:null}
 
     </>
 }

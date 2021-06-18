@@ -39,7 +39,8 @@ export class ReportApi {
 
     static async updateReportByReportID(report_id,data:any){
         const result = await axios.put(`${REPORT_API}/`+report_id,data).then(res=>{
-            if(res.data === 'successful') window.location.reload()
+            if(res.data === 'successful') return true
         })
+        return result
     }
 }

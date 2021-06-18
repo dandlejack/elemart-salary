@@ -34,4 +34,5 @@ export interface TableProps {
     formType: string;
     checkEnter?: any;
     showData:number;
+    tableName?:string;
 }

@@ -1,6 +1,8 @@
 import { DashboardPage } from "../pages/DashboardPage/DashboardPage";
 import { EmployeeInfoPage } from "../pages/EmployeeInfo/EmployeeInfoPage";
 import { EmployeePage } from "../pages/EmployeePage/EmployeePage";
+import { PettyCashBookPage } from "../pages/PettyCashBookPage/PettyCashBookPage";
+import { PettyCashInfoPage } from "../pages/PettyCashInfoPage/PettyCashInfoPage";
 import { SalaryInfoPage } from "../pages/SalaryListInfoPage/SalaryInfoPage";
 import { SaralyListPage } from "../pages/SalaryListPage/SaralyListPage";
 import { SettingPage } from "../pages/SettingPage/SettingPage";
@@ -35,6 +37,18 @@ export const RoutePath: Page[] = [
         pathName: 'ReportInfo',
         path: '/ReportInfo/:id',
         component: SalaryInfoPage,
+        isMenu:false
+    },
+    {
+        pathName: 'สมุดเงินสดย่อย',
+        path: '/PettyCashBook',
+        component: PettyCashBookPage,
+        isMenu:true
+    },
+    {
+        pathName: 'PettyCashInfo',
+        path: '/PettyCashInfo/:id',
+        component: PettyCashInfoPage,
         isMenu:false
     },
     {

@@ -109,7 +109,7 @@ export const AddSalaryForm: React.FC = () => {
 
         </div>
         <div>
-            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={userData} ablePagination={{ disabled: false }} showData={15} startCount={1} formType={'salary-month'}  />
+            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={userData} ablePagination={{ disabled: false }} showData={15} startCount={1} formType={'salary-month'} tableName='salary-table'  />
         </div>
         <div style={{ margin: '15px auto', textAlign: 'center' }}>
             <Button type='primary' onClick={onSave}>เพิ่มรายงานเงินเดือน</Button>

@@ -5,7 +5,7 @@ export interface HeaderProps {
     linkPath?: string
     nameOfLinkPath: string
     component?: any
-    modalWidth?:number
+    modalWidth?:number | string
 }
 
 export interface IDataProps {
@@ -29,13 +29,29 @@ export interface IDataProps {
     tax: number
 }
 
+export interface PettyCashAttributesProps {
+    date:number;
+    description:string;
+    received_cash:number;
+    received_bank:number;
+    paid_cash:number;
+    paid_bank:number;
+    pettycash_total:number;
+}
+
+export interface PettyCashDataProps {
+    attributes:Array<PettyCashAttributesProps>;
+    year_of_report:string;
+    month_report: string;
+}
+
 export interface ModalProps {
     modalTitle: string;
     modalType: string;
     modalVisible: boolean;
     getClose: Function;
     modalForm?: ReactChild;
-    modalWidth?: number;
+    modalWidth?:number | string;
 }
 
 export interface IReportMonthList {

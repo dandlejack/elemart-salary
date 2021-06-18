@@ -41,7 +41,6 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 return data
             })
             document.title = results.firstname + ' ' + results.lastname
-
         }
         getData()
         return () => {

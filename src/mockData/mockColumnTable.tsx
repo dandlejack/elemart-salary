@@ -2,6 +2,7 @@ import { Button, Popconfirm } from "antd"
 import React from "react"
 import { Link } from "react-router-dom"
 import { EmployeeApi } from "../api/EmployeeApi"
+import { PettyCashApi } from "../api/PettyCashApi"
 import { ReportApi } from "../api/ReportApi"
 
 export const employeeColumn = [
@@ -16,7 +17,7 @@ export const employeeColumn = [
         key: 'current_salary',
         dataIndex: 'current_salary',
         dataType: 'number',
-        width:150
+        width: 150
     },
     {
         title: 'Operation',
@@ -37,7 +38,7 @@ export const employeeColumn = [
                 <Popconfirm
                     title="คุณต้องการลบรายงานนี้?"
                     onConfirm={() => {
-                        EmployeeApi.deleteEmployeeByEmployeeId(record.employee_id).then(res=>{
+                        EmployeeApi.deleteEmployeeByEmployeeId(record.employee_id).then(res => {
                             window.location.reload()
                         })
                     }}//(record._id)}
@@ -89,22 +90,59 @@ export const salaryMonthColumn = [
         ),
     }
 ]
-
+export const PettyCashList = [
+    {
+        title: 'เดือน',
+        key: 'month_report',
+        dataIndex: 'month_report',
+        width: '50%',
+    },
+    {
+        title: 'Operation',
+        key: 'operation',
+        dataIndex: 'operation',
+        width: '50%',
+        render: (text: string, record: any) => (
+            <>
+                <Link to={{ pathname: '/PettyCashInfo/' + record.pettycash_id }}>
+                    <Button
+                        type='primary'
+                        style={{ marginRight: 8 }}
+                    >
+                        ดูรายละเอียด
+                </Button>
+                </Link>
+                <Popconfirm
+                    title="คุณต้องการลบรายงานนี้?"
+                    onConfirm={() => {
+                        PettyCashApi.deleteReportByPettyCashId(record.pettycash_id).then(res => {
+                            window.location.reload()
+                        })
+                    }}//(record._id)}
+                    okText="Yes"
+                    cancelText="No"
+                >
+                    <Button type='primary' danger >Delete</Button>
+                </Popconfirm>
+            </>
+        ),
+    }
+]
 export const AddSalaryColumn = [
     {
         title: 'ลำดับ',
         key: 'key',
         dataIndex: 'key',
-        width:70,
-        fixed:'left' as any | undefined
+        width: 70,
+        fixed: 'left' as any | undefined
     },
     {
         title: 'ชื่อ-สกุล',
         key: 'fullname',
         dataIndex: 'fullname',
         dataType: 'select',
-        width:200,
-        fixed:'left' as any | undefined,
+        width: 200,
+        fixed: 'left' as any | undefined,
         editable: true
     },
     {
@@ -198,8 +236,89 @@ export const AddSalaryColumn = [
         editable: true
     },
     {
-        title:'Action',
-        key:'operation',
-        dataIndex:'operation',
+        title: 'Action',
+        key: 'operation',
+        dataIndex: 'operation',
+    }
+]
+
+export const AddPettyCashColumn = [
+    {
+        title: 'วันที่',
+        key: 'dateInMonth',
+        dataIndex: 'dateInMonth',
+        width: 70,
+        dataType: 'number',
+        editable: true
+    },
+    {
+        title: 'รายละเอียด',
+        key: 'description',
+        dataIndex: 'description',
+        width: 400,
+        editable: true
+    },
+    {
+        title: 'เงินรับ',
+        key: 'received',
+        dataIndex: 'received',
+        dataType: 'number',
+        editable: true,
+        children: [
+            {
+                title: 'เงินสด',
+                key: 'received_cash',
+                dataIndex: 'received_cash',
+                width: 200,
+                dataType: 'number',
+                editable: true
+            },
+            {
+                title: 'ธนาคาร',
+                key: 'received_bank',
+                dataIndex: 'received_bank',
+                width: 200,
+                dataType: 'number',
+                editable: true
+            }
+        ]
+    },
+    {
+        title: 'เงินจ่าย',
+        key: 'paid',
+        dataIndex: 'paid',
+        dataType: 'number',
+        editable: true,
+        children: [
+            {
+                title: 'เงินสด',
+                key: 'paid_cash',
+                dataIndex: 'paid_cash',
+                width: 200,
+                dataType: 'number',
+                editable: true
+            },
+            {
+                title: 'ธนาคาร',
+                key: 'paid_bank',
+                dataIndex: 'paid_bank',
+                width: 200,
+                dataType: 'number',
+                editable: true
+            }
+        ]
+    },
+    {
+        title: 'คงเหลือ',
+        key: 'pettycash_total',
+        dataIndex: 'pettycash_total',
+        width: 200,
+        dataType: 'number',
+    },
+    {
+        title: 'Action',
+        key: 'operation',
+        width: 200,
+        dataIndex: 'operation',
     }
 ]
