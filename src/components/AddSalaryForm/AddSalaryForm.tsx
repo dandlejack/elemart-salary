@@ -1,18 +1,23 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button, DatePicker, Input, notification } from 'antd'
 import { EmployeeApi } from '../../api/EmployeeApi'
 import { EditableTable } from '../EditTable/EditableTable'
 import { AddSalaryColumn, salaryMonthColumn } from '../../mockData/mockColumnTable'
 import { ReportApi } from '../../api/ReportApi'
 import { IDataProps } from '../../types/StoreTypes'
-import moment from 'moment'
-
+import { OutTable, ExcelRenderer } from 'react-excel-renderer';
+import { CustomResult } from '../CustomResult/CustomResult'
 export const AddSalaryForm: React.FC = () => {
     const [dataTable, setdataTable] = useState([] as Array<IDataProps>)
     const [monthPicker, setMonthPicker] = useState('' as string)
     const [getKeyDown, setKeyDown] = useState(false)
     const [userData, setUserData] = useState([] as Array<IDataProps>)
     const [alertInputMonth, setAlertInputMonth] = useState(false);
+    const [visiblity, setVisiblity] = useState(false)
+    const [excelData, setExcelData] = useState({
+        cols: [],
+        rows: []
+    })
     useEffect(() => {
         const pushkeydown = (event: any) => {
             if (event.code === "Enter" || event.code === "NumpadEnter") {
@@ -69,49 +74,94 @@ export const AddSalaryForm: React.FC = () => {
             attributes: result
         }
         if (monthPicker !== "") {
-            await ReportApi.addReport(salaryDataForm)
+            await ReportApi.addReport(salaryDataForm).then(res => {
+                setVisiblity(true)
+            })
         } else {
             notificationOpen()
             setAlertInputMonth(true)
         }
     }
-    
+
     const notificationOpen = () => {
         setAlertInputMonth(!alertInputMonth)
         notification['error']({
-            message:'เกิดข้อผิดพลาด',
-            description:'กรุณาเลือกเดือน-ปีของรายงาน',
+            message: 'เกิดข้อผิดพลาด',
+            description: 'กรุณาเลือกเดือน-ปีของรายงาน',
             style: {
                 width: 600,
-              },
-            duration:3
+            },
+            duration: 3
         })
     }
 
     const getTableData = (data: Array<IDataProps>) => {
+        setdataTable(data)
         // 
-        EmployeeApi.findAllEmployees().then(res => {
-            const storeRes = res
-            data.map(d => {
-                const result = storeRes.find(ds => ds.fullname === d.fullname)
-                if (result !== undefined) d.employees_id = result.employee_id
+        // EmployeeApi.findAllEmployees().then(res => {
+        //     const storeRes = res
+        //     data.map(d => {
+        //         const result = storeRes.find(ds => ds.fullname === d.fullname)
+        //         if (result !== undefined) d.employees_id = result.employee_id
 
-            })
-            setdataTable(data)
-        })
+        //     })
+        //     setdataTable(data)
+        // })
     }
+    const fileHandler = (event) => {
+        let fileObj = event.target.files[0];
+        ExcelRenderer(fileObj, (err, resp) => {
+            if (err) {
+                console.log(err);
+            }
+            else {
 
+                const storeObj: Array<IDataProps> = []
+                resp.rows.map((data, index) => {
+                    if (index >= 3) {
+                        const d= userData.find(ds => ds.fullname === data[1] + ' ' + data[2])
+                        storeObj.push(
+                            {
+                                fullname: data[1] + ' ' + data[2],
+                                absent: data[13] ? data[13] : 0,
+                                agent: data[7] ? data[7] : 0,
+                                agent_tax: data[10] ? data[10].toFixed(2) : 0,
+                                allowance: data[5] ? data[5] : 0,
+                                bonus: data[8] ? data[8] : 0,
+                                bonus_tax: data[14] ? data[14] : 0,
+                                fuel: data[6] ? data[6] : 0,
+                                late: data[12] ? data[12] : 0,
+                                key: index + 1,
+                                lending: data[11] ? data[11] : 0,
+                                no: data[0],
+                                overtime: data[4] ? data[4] : 0,
+                                salary: data[3],
+                                social_security: d?.social_security,
+                                tax: data[9] ? data[9] : 0,
+                                employees_id:d?.employees_id,
+                                operation: null
+                            }
+                        )
+                }
+                })
+                setdataTable(storeObj)
+            }
+        });
+    }
 
     return <div>
         <div style={{ marginBottom: 15 }}>
             <span>เดือนที่</span> <DatePicker format={'MM/YYYY'} picker="month" onChange={(date: any, dateString: string) => setMonthPicker(dateString)} />
 
         </div>
+        <input type="file" onChange={e => fileHandler(e)} style={{ "padding": "10px" }} />
         <div>
-            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={userData} ablePagination={{ disabled: false }} showData={15} startCount={1} formType={'salary-month'} tableName='salary-table'  />
+            {/* <OutTable data={excelData.rows} columns={excelData.cols} tableClassName="ExcelTable2007" tableHeaderRowClass="heading" /> */}
+            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={dataTable} ablePagination={{ disabled: false }} showData={15} startCount={1} formType={'salary-month'} tableName='salary-table' />
         </div>
         <div style={{ margin: '15px auto', textAlign: 'center' }}>
             <Button type='primary' onClick={onSave}>เพิ่มรายงานเงินเดือน</Button>
         </div>
+        {visiblity ? <CustomResult title='เพิ่มข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} /> : null}
     </div>
 }

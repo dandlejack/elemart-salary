@@ -25,7 +25,7 @@ export interface IDataProps {
     operation: any
     overtime: number
     salary: number
-    social_security: number
+    social_security?: number
     tax: number
 }
 
