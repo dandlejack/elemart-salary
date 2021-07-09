@@ -77,7 +77,14 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
             setDataSource(res[0].attributes)
             setCount(res[0].attributes.length)
         })
-
+        ReportApi.findTest({
+            filterObject: {
+                month_report: '03/2021',
+                type:'lending'
+            }
+        }).then(res => {
+            console.log(res)
+        })
         return () => {
         };
     }, [id]);

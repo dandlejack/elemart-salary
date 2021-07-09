@@ -68,6 +68,9 @@ export const EditableTable: React.FC<TableProps> = (props: any) => {
                 const findLastestTotal = dataSources.find(data => data.key === row.key - 1)
                 row.pettycash_total = findLastestTotal.pettycash_total + (row.received_cash + row.received_bank) - (row.paid_cash + row.paid_bank)
             }
+            if(row.description === undefined){
+                row.description = '-'
+            }
         }
         const newData = [...dataSources];
         const index = newData.findIndex((item: any) => row.key === item.key);

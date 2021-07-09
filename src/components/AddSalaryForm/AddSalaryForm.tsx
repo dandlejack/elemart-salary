@@ -122,7 +122,7 @@ export const AddSalaryForm: React.FC = () => {
                         const d= userData.find(ds => ds.fullname === data[1] + ' ' + data[2])
                         storeObj.push(
                             {
-                                fullname: data[1] + ' ' + data[2],
+                                fullname: data[2]!==undefined ? data[1] + ' ' + data[2] : data[1] + ' -',
                                 absent: data[13] ? data[13] : 0,
                                 agent: data[7] ? data[7] : 0,
                                 agent_tax: data[10] ? data[10].toFixed(2) : 0,

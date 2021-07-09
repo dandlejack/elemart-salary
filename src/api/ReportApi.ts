@@ -25,6 +25,7 @@ export class ReportApi {
         })
         return result
     }
+
     static async findSumLateAndSecuritySocial(params: any) {
         const result = await axios.get(`${REPORT_API}/findTotalSecuritySocialAndLate`, { params }).then(res => {
             if (res.status === 200) return res.data
@@ -40,6 +41,13 @@ export class ReportApi {
     static async updateReportByReportID(report_id,data:any){
         const result = await axios.put(`${REPORT_API}/`+report_id,data).then(res=>{
             if(res.data === 'successful') return true
+        })
+        return result
+    }
+
+    static async findTest(params: any) {
+        const result = await axios.get(`${REPORT_API}/getLateSalary`, { params }).then(res => {
+            return res.data
         })
         return result
     }
