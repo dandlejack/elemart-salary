@@ -128,7 +128,7 @@ export const AddSalaryForm: React.FC = () => {
                                 agent_tax: data[10] ? data[10].toFixed(2) : 0,
                                 allowance: data[5] ? data[5] : 0,
                                 bonus: data[8] ? data[8] : 0,
-                                bonus_tax: data[14] ? data[14] : 0,
+                                bonus_tax: data[13] ? data[13] : 0,
                                 fuel: data[6] ? data[6] : 0,
                                 late: data[12] ? data[12] : 0,
                                 key: index + 1,
