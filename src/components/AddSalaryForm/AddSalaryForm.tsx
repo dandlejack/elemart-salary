@@ -123,21 +123,21 @@ export const AddSalaryForm: React.FC = () => {
                         storeObj.push(
                             {
                                 fullname: data[2]!==undefined ? data[1] + ' ' + data[2] : data[1] + ' -',
-                                absent: data[13] ? data[13] : 0,
+                                absent: data[14] ? data[14] : 0,
                                 agent: data[7] ? data[7] : 0,
-                                agent_tax: data[10] ? data[10].toFixed(2) : 0,
+                                agent_tax: data[11] ? data[11].toFixed(2) : 0,
                                 allowance: data[5] ? data[5] : 0,
                                 bonus: data[8] ? data[8] : 0,
-                                bonus_tax: data[14] ? data[14] : 0,
+                                bonus_tax: data[15] ? data[15] : 0,
                                 fuel: data[6] ? data[6] : 0,
-                                late: data[12] ? data[12] : 0,
+                                late: data[13] ? data[13] : 0,
                                 key: index + 1,
-                                lending: data[11] ? data[11] : 0,
+                                lending: data[12] ? data[12] : 0,
                                 no: data[0],
                                 overtime: data[4] ? data[4] : 0,
                                 salary: data[3],
-                                social_security: d?.social_security,
-                                tax: data[9] ? data[9] : 0,
+                                social_security: data[9] ? data[9] : 0,
+                                tax: data[10] ? data[10] : 0,
                                 employees_id:d?.employees_id,
                                 operation: null
                             }
