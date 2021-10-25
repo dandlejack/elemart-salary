@@ -251,7 +251,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 <tr>
                     <td></td>
                     <td></td>
-                    <td>เงินยืมบริษัท</td>
+                    <td>เงินกู้,เงินยืมบริษัท</td>
                     <td>-{reportSource.lending}</td>
                     <td></td>
                     <td></td>

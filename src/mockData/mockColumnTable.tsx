@@ -208,7 +208,7 @@ export const AddSalaryColumn = [
         editable: true
     },
     {
-        title: 'เงินยืม',
+        title: 'เงินกู้,เงินยืม',
         key: 'lending',
         dataIndex: 'lending',
         dataType: 'number',
