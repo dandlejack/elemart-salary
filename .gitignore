@@ -10,6 +10,7 @@
 
 # production
 /build
+/elemart-salary
 
 # misc
 .DS_Store

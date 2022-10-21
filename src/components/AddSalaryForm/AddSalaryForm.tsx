@@ -125,7 +125,7 @@ export const AddSalaryForm: React.FC = () => {
                                 fullname: data[2]!==undefined ? data[1] + ' ' + data[2] : data[1] + ' -',
                                 absent: data[14] ? data[14] : 0,
                                 agent: data[7] ? data[7] : 0,
-                                agent_tax: data[11] ? data[11].toFixed(2) : 0,
+                                agent_tax: data[11] ? parseInt(data[11]) : 0,
                                 allowance: data[5] ? data[5] : 0,
                                 bonus: data[8] ? data[8] : 0,
                                 bonus_tax: data[15] ? data[15] : 0,

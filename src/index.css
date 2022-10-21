@@ -65,3 +65,9 @@ code {
   color: #000;
   font-weight: bold;
 }
+.ant-table-tbody > tr.ant-table-row:hover > td {
+  background-color: #dbffd9 !important;
+}
+.ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: #dbffd9 !important;
+}

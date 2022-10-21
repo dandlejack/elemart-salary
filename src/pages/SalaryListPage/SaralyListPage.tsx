@@ -8,7 +8,12 @@ export const SaralyListPage: React.FC = () => {
     const [dataSource, setDataSource] = useState([] as Array<Object>)
     useEffect(() => {
         ReportApi.findSalaryList({}).then(res=>{
-            setDataSource(res)
+            const sortingWithMonth = res.sort((a, b) => {
+                a = a.month_report.split('/')
+                b = b.month_report.split('/')
+                return (new Date(b[1]).valueOf() > new Date(a[1]).valueOf()) ? 1 : ((new Date(a[1]).valueOf() > new Date(b[1]).valueOf()) ? -1 : 0)
+            })
+            setDataSource(sortingWithMonth)
         })
         document.title = 'รายงานเงินเดือน'
         return () => {
