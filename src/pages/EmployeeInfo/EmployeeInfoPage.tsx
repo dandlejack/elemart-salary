@@ -37,8 +37,8 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 const sortingWithMonth = res.sort((a, b) => {
                     a = a.month_report.split('/')
                     b = b.month_report.split('/')
-                    return (new Date(b[1]).valueOf() > new Date(a[1]).valueOf()) ? 1 : ((new Date(a[1]).valueOf() > new Date(b[1]).valueOf()) ? -1 : 0)
-                    // return (new Date(b[1], b[0], 1).valueOf() > new Date(a[1], a[0], 1).valueOf()) ? 1 : ((new Date(a[1], a[0], 1).valueOf() > new Date(b[1], b[0], 1).valueOf()) ? -1 : 0)
+                    // return (new Date(b[1]).valueOf() > new Date(a[1]).valueOf()) ? 1 : ((new Date(a[1]).valueOf() > new Date(b[1]).valueOf()) ? -1 : 0)
+                    return (new Date(b[1], b[0], 1).valueOf() > new Date(a[1], a[0], 1).valueOf()) ? 1 : ((new Date(a[1], a[0], 1).valueOf() > new Date(b[1], b[0], 1).valueOf()) ? -1 : 0)
                 })
                 setReportMonthList(sortingWithMonth)
             })
@@ -67,7 +67,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
             if (res.length > 0) {
                 const commaTest: IReportProps = AddCommaOfObject(res[0].attributes[0])
                 const data = res[0].attributes[0]
-                const gross = data.salary + data.overtime + data.allowance + data.fuel + data.agent + data.bonus
+                const gross = (data.salary || 0) + data.overtime + data.allowance + data.fuel + data.agent + data.bonus
                 const deductions = data.social_security + data.tax + data.agent_tax + data.lending + data.late + data.absent + data.bonus_tax
                 setSummaryOfTotal({
                     gross_total: AddComma(gross),
