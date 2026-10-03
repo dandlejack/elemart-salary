@@ -1,4 +1,4 @@
-import { Button, Popconfirm, Switch, Table } from 'antd'
+import { Button, notification, Popconfirm, Switch, Table } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { ReportApi } from '../../api/ReportApi'
 import { HeaderComponent } from '../../components/HeaderComponent'
@@ -72,18 +72,15 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 report_id: id
             }
         }).then(res => {
-            const filterThaiMonth = monthVal.filter(d => d.key === res[0].month_report.split('/')[0])[0].value
-            setMonthReport(filterThaiMonth + ' ' + res[0].month_report.split('/')[1])
+            if (!res || res.length === 0) {
+                setMonthReport('ไม่พบรายงาน')
+                return
+            }
+            const [monthNum, year] = res[0].month_report.split('/')
+            const thaiMonth = monthVal.find(d => d.key === monthNum)
+            setMonthReport(thaiMonth ? thaiMonth.value + ' ' + year : res[0].month_report)
             setDataSource(res[0].attributes)
             setCount(res[0].attributes.length)
-        })
-        ReportApi.findTest({
-            filterObject: {
-                month_report: '03/2021',
-                type:'lending'
-            }
-        }).then(res => {
-            console.log(res)
         })
         return () => {
         };
@@ -123,7 +120,10 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
             attributes:dataSource
         }
         ReportApi.updateReportByReportID(id,data).then(res=>{
-            setVisiblity(!visiblity)
+            if (res) setVisiblity(true)
+            else notification.error({ message: 'บันทึกการแก้ไขไม่สำเร็จ', duration: 3 })
+        }).catch(() => {
+            notification.error({ message: 'บันทึกการแก้ไขไม่สำเร็จ', description: 'กรุณาตรวจสอบการเชื่อมต่อ backend', duration: 3 })
         })
     }
     
@@ -146,7 +146,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
         {!canEdit ?
                 <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} />
             :
-            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={dataSource} ablePagination={{ disabled: false }} showData={10} startCount={1} formType={'salary-month'} />
+            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={dataSource} ablePagination={{ disabled: false }} showData={10} startCount={1} formType={'salary-month'} tableName='salary-table' />
         }
         {/* <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} /> */}
 

@@ -27,6 +27,8 @@ export interface IDataProps {
     salary: number
     social_security?: number
     tax: number
+    fund?: number
+    note?: string
 }
 
 export interface PettyCashAttributesProps {
@@ -55,21 +57,21 @@ export interface ModalProps {
 }
 
 export interface IReportMonthList {
-    fullname: string;
     report_id: string;
     month_report: string;
 }
 export interface ITotalSocialAndLate {
-    fullname: string;
-    total_late: string;
-    total_lending: string;
-    total_absent:string
-    total_security_social: string;
+    total_late: number;
+    total_lending: number;
+    total_absent: number;
+    total_security_social: number;
+    total_fund: number;
 }
 export interface IEmployeeProps {
     employees_id: string;
     firstname: string;
     lastname: string;
+    fullname?: string;
     current_salary: number;
     total_social_security: number;
 }

@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react'
-import { Button, Input, InputNumber } from 'antd'
+import { useState } from 'react'
+import { Button, Input, InputNumber, notification } from 'antd'
 import { EmployeeApi } from '../../api/EmployeeApi'
+import { calcSocialSecurity, normalizeName } from '../../utils/Salary'
 export const AddEmployeeForm: React.FC = () => {
     const [employeeData, setEmployeeData] = useState({
         firstname:'',
         lastname:'',
-        salary:0,
-        social_security : 0,
-        total_social_security: 0
+        current_salary:0,
+        social_security : 0
     })
     const onSave = async () => {
-        await EmployeeApi.addEmployee(employeeData)
+        const firstname = normalizeName(employeeData.firstname)
+        const lastname = normalizeName(employeeData.lastname)
+        if (firstname === '' || lastname === '' || !(employeeData.current_salary > 0)) {
+            notification.error({ message: 'กรุณากรอกชื่อ สกุล และเงินเดือนให้ครบ', duration: 3 })
+            return
+        }
+        await EmployeeApi.addEmployee({ ...employeeData, firstname, lastname })
     }
     return <div>
         <div>
@@ -20,7 +26,7 @@ export const AddEmployeeForm: React.FC = () => {
             <Input placeholder='สกุล' onChange={e => setEmployeeData({...employeeData,lastname:e.target.value})} style={{ width: 720, marginLeft: 15 }} />
         </div>
         <div style={{ marginTop: 15 }}>
-            <InputNumber placeholder='เงินเดือน' onChange={(value: number) => setEmployeeData({...employeeData,salary:value, social_security:value >= 15000 ? 750 : value * 0.05})} style={{ width: 720, marginLeft: 15 }} />
+            <InputNumber placeholder='เงินเดือน' min={0} onChange={(value: number) => setEmployeeData({...employeeData,current_salary:value, social_security:calcSocialSecurity(value)})} style={{ width: 720, marginLeft: 15 }} />
         </div>
         <div style={{ margin: '15px auto', textAlign: 'center' }}>
             <Button type='primary' onClick={onSave}>เพิ่มพนักงาน</Button>

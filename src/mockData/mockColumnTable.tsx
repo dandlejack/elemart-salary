@@ -236,6 +236,20 @@ export const AddSalaryColumn = [
         editable: true
     },
     {
+        title: 'กองทุน',
+        key: 'fund',
+        dataIndex: 'fund',
+        dataType: 'number',
+        editable: true
+    },
+    {
+        title: 'หมายเหตุ',
+        key: 'note',
+        dataIndex: 'note',
+        width: 250,
+        editable: true
+    },
+    {
         title: 'Action',
         key: 'operation',
         dataIndex: 'operation',

@@ -7,6 +7,7 @@ import {
 import { TablePaginationConfig } from 'antd/lib/table';
 import { EmployeeApi } from '../../api/EmployeeApi';
 import { TableProps } from '../../types/EditTableTypes';
+import { calcAgentTax } from '../../utils/Salary';
 
 
 
@@ -59,8 +60,10 @@ export const EditableTable: React.FC<TableProps> = (props: any) => {
 
     const handleSave = (row: any) => {
         if (props.tableName === 'salary-table') {
-            row.social_security = row.salary >= 15000 ? 750 : row.salary * 0.05
-            row.agent_tax = row.agent * 0.05
+            // Social security is taken as entered (rates vary by period). Agent tax follows the agent amount
+            // only when that amount was edited, so a manually corrected agent tax is kept otherwise.
+            const previous = dataSources.find((item: any) => item.key === row.key)
+            if (previous && previous.agent !== row.agent) row.agent_tax = calcAgentTax(row.agent)
         } else if (props.tableName === 'petty-cash') {
             if (row.key === 1) {
                 row.pettycash_total = (row.received_cash + row.received_bank) - (row.paid_cash + row.paid_bank)

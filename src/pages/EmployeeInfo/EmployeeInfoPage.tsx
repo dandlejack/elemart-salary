@@ -1,177 +1,144 @@
-import { Button, InputNumber, Select, Statistic, Switch } from "antd";
+import { Alert, Button, InputNumber, notification, Select, Statistic, Switch } from "antd";
 import React, { useEffect, useRef, useState } from "react";
 import { EmployeeApi } from "../../api/EmployeeApi";
 import { ReportApi } from "../../api/ReportApi";
 import { HeaderComponent } from "../../components/HeaderComponent";
 import logo from '../../images/logo-com.png'
-import { AddComma, AddCommaOfObject } from '../../utils/AddComma'
-import { SelectValue } from "antd/lib/select";
-import { IReportMonthList, IEmployeeProps, IReportProps, ITotalSocialAndLate } from "../../types/StoreTypes";
+import { AddComma } from '../../utils/AddComma'
+import { calcSalaryTotals, calcSocialSecurity, formatMoney, normalizeName } from '../../utils/Salary'
+import { IReportMonthList, IEmployeeProps, ITotalSocialAndLate } from "../../types/StoreTypes";
 import { GeneratePDF } from "../../components/GeneratePDF/GeneratePDF";
 
+const monthVal = [
+    { key: '01', value: 'ม.ค.' },
+    { key: '02', value: 'ก.พ.' },
+    { key: '03', value: 'มี.ค.' },
+    { key: '04', value: 'เม.ย.' },
+    { key: '05', value: 'พ.ค.' },
+    { key: '06', value: 'มิ.ย.' },
+    { key: '07', value: 'ก.ค.' },
+    { key: '08', value: 'ส.ค.' },
+    { key: '09', value: 'ก.ย.' },
+    { key: '10', value: 'ต.ค.' },
+    { key: '11', value: 'พ.ย.' },
+    { key: '12', value: 'ธ.ค.' },
+]
 
+// "03/2026" (or "12/2025-bonus") -> "มี.ค. 2569"
+const toThaiMonth = (monthReport: string) => {
+    const [monthNum, year] = monthReport.split('/')
+    const month = monthVal.find(d => d.key === monthNum)
+    const thaiYear = parseInt(year) + 543
+    return month && !isNaN(thaiYear) ? month.value + ' ' + thaiYear : monthReport
+}
+
+const emptyTotals: ITotalSocialAndLate = {
+    total_security_social: 0,
+    total_late: 0,
+    total_absent: 0,
+    total_lending: 0,
+    total_fund: 0
+}
 
 export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
     const { id } = match.params;
     const ref = useRef<HTMLDivElement>(null)
     const [reportMonthList, setReportMonthList] = useState([] as Array<IReportMonthList>)
     const [dataSource, setDataSource] = useState({} as IEmployeeProps)
-    const [reportSource, setReportSource] = useState({} as IReportProps)
-    const [reportMonth, setReportMonth] = useState('' as SelectValue)
-    const [reportThaiMonth, setReportThaiMonth] = useState('' as SelectValue)
-    const [totalSocialandLate, setTotalSocialandLate] = useState({} as ITotalSocialAndLate);
-    const [currentSalary, setCurrentSalary] = useState(0)
+    const [reportId, setReportId] = useState('')
+    // Salary row of this employee in the selected report; null when the report has no row for them.
+    const [reportRow, setReportRow] = useState(null as any)
+    const [reportThaiMonth, setReportThaiMonth] = useState('')
+    const [totalSocialandLate, setTotalSocialandLate] = useState(emptyTotals);
+    const [currentSalary, setCurrentSalary] = useState(null as number | null)
     const [editable, setEditable] = useState(false)
-    const [summaryOfTotal, setSummaryOfTotal] = useState({
-        gross_total: '0',
-        deuction_total: '0',
-        total: '0'
-    })
+    const fullname = dataSource.fullname || (dataSource.firstname ? dataSource.firstname + ' ' + dataSource.lastname : '')
+
     useEffect(() => {
         const getData = async () => {
-            ReportApi.findSalaryList({
-                filterObject: {
-                    'attributes.employees_id': id
-                }
-            }).then(res => {
-                setReportMonthList(res)
-            })
-            const results = await EmployeeApi.findEmployeeByEmployeeId(id).then(data => {
-                setDataSource(data)
-                return data
-            })
-            document.title = results.firstname + ' ' + results.lastname
+            const employee = await EmployeeApi.findEmployeeByEmployeeId(id)
+            if (!employee) return
+            setDataSource(employee)
+            const name = employee.fullname || employee.firstname + ' ' + employee.lastname
+            document.title = name
+            // Reports created before employees_id was stored can only be matched by name.
+            const reports = await ReportApi.findSalaryList({ employees_id: id, fullname: name })
+            setReportMonthList(reports || [])
         }
         getData()
-        return () => {
-        };
     }, [id]);
 
     useEffect(() => {
-        ReportApi.findAllReports({
-            filterObject: {
-                'attributes.fullname': dataSource.firstname + ' ' + dataSource.lastname,
-                'month_report': reportMonth,
-            },
-            getAttributes: {
-                _id: 0,
-                'attributes.$': 1
-            }
-        }).then(res => {
-            if (res.length > 0) {
-                const commaTest: IReportProps = AddCommaOfObject(res[0].attributes[0])
-                const data = res[0].attributes[0]
-                const gross = data.salary + data.overtime + data.allowance + data.fuel + data.agent + data.bonus
-                const deductions = data.social_security + data.tax + data.agent_tax + data.lending + data.late + data.absent + data.bonus_tax
-                setSummaryOfTotal({
-                    gross_total: AddComma(gross),
-                    deuction_total: AddComma(deductions),
-                    total: AddComma(gross - deductions)
-                })
-                setReportSource(commaTest)
-            }
+        if (!reportId || !fullname) return
+        let cancelled = false
+        setReportRow(null)
+        setTotalSocialandLate(emptyTotals)
+        ReportApi.findReportById(reportId).then(report => {
+            if (cancelled) return
+            const row = report && report.attributes.find((a: any) => a.employees_id === id || normalizeName(a.fullname) === normalizeName(fullname))
+            setReportRow(row || null)
         })
-        ReportApi.findSumLateAndSecuritySocial({
-            filterObject: {
-                'attributes.fullname': dataSource.firstname + ' ' + dataSource.lastname,
-                year_of_report: reportMonth?.toString().split('/')[1]
-            }
-        }).then(res => {
-            const result = AddCommaOfObject(res)
-            setTotalSocialandLate(result)
+        ReportApi.findSumLateAndSecuritySocial({ report_id: reportId, employees_id: id, fullname }).then(res => {
+            if (!cancelled && res) setTotalSocialandLate(res)
         })
         return () => {
-
+            cancelled = true
         };
-    }, [reportMonth]);
+    }, [reportId, id, fullname]);
 
-    const changeMonth = val => {
-        const monthNum = val.split('/')[0]
-        const thisYear = (parseInt(val.split('/')[1]) + 543).toString()
-        const monthVal = [
-            {
-                key: '01',
-                value: 'ม.ค.'
-            },
-            {
-                key: '02',
-                value: 'ก.พ.'
-            },
-            {
-                key: '03',
-                value: 'มี.ค.'
-            },
-            {
-                key: '04',
-                value: 'เม.ย.'
-            },
-            {
-                key: '05',
-                value: 'พ.ค.'
-            },
-            {
-                key: '06',
-                value: 'มิ.ย.'
-            },
-            {
-                key: '07',
-                value: 'ก.ค.'
-            },
-            {
-                key: '08',
-                value: 'ส.ค.'
-            },
-            {
-                key: '09',
-                value: 'ก.ย.'
-            },
-            {
-                key: '10',
-                value: 'ต.ค.'
-            },
-            {
-                key: '11',
-                value: 'พ.ย.'
-            },
-            {
-                key: '12',
-                value: 'ธ.ค.'
-            },
-        ]
-        const filterThaiMonth = monthVal.filter(d => d.key === monthNum)[0].value
-        setReportMonth(val)
-        setReportThaiMonth(filterThaiMonth + ' ' + thisYear)
+    const changeMonth = (selectedReportId: string) => {
+        const report = reportMonthList.find(d => d.report_id === selectedReportId)
+        setReportId(selectedReportId)
+        setReportThaiMonth(report ? toThaiMonth(report.month_report) : '')
     }
+
     const updateSalary = () => {
+        if (!currentSalary || currentSalary <= 0) {
+            notification.error({ message: 'กรุณากรอกเงินเดือนให้ถูกต้อง', duration: 3 })
+            return
+        }
         const data = {
             current_salary: currentSalary,
-            social_security: currentSalary >= 15000 ? 750 : currentSalary * 0.05
+            social_security: calcSocialSecurity(currentSalary)
         }
         EmployeeApi.updateEmployeeByEmployeeId(id, data)
+    }
+
+    const field = (key: string) => reportRow ? formatMoney(reportRow[key]) : ''
+    // Payslips before the fund started (no fund value stored) keep their original layout.
+    const showFund = reportRow !== null && reportRow.fund !== undefined && reportRow.fund !== null
+    const totals = reportRow ? calcSalaryTotals(reportRow) : null
+    const summaryOfTotal = {
+        gross_total: totals ? AddComma(totals.gross) : '',
+        deuction_total: totals ? AddComma(totals.deductions) : '',
+        total: totals ? AddComma(totals.net) : ''
     }
 
     return <div style={{ marginBottom: 50 }}>
         <HeaderComponent title='Employee Info' nameOfLinkPath='' />
         <div style={{ width: '100%', marginTop: 15, marginRight: 10, position: 'relative' }}>
-            {reportMonth !== '' ? <GeneratePDF document={document.getElementById('page-pdf')} fullname={dataSource.firstname + ' ' + dataSource.lastname} reportMonth={reportThaiMonth} /> : <></>}
+            {reportRow ? <GeneratePDF document={document.getElementById('page-pdf')} fullname={fullname} reportMonth={reportThaiMonth} /> : <></>}
         </div>
         <div style={{ marginLeft: 15 }} className='space-between-component'>
             <Switch checkedChildren='ยกเลิก' unCheckedChildren='แก้ไข' onChange={e => setEditable(!editable)} />
         </div>
         <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <Statistic title="เงินเดือนปัจจุบัน" value={dataSource.current_salary +" บาท"} />
+            <Statistic title="เงินเดือนปัจจุบัน" value={dataSource.current_salary !== undefined && dataSource.current_salary !== null ? AddComma(dataSource.current_salary) + " บาท" : '-'} />
         </div>
         {editable ? <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <InputNumber style={{width:150}} onChange={(salary: number) => setCurrentSalary(salary)} /> <Button type='primary' onClick={updateSalary}>Update</Button>
+            <InputNumber style={{width:150}} min={0} onChange={(salary: number) => setCurrentSalary(salary)} /> <Button type='primary' onClick={updateSalary}>Update</Button>
         </div> : <></>}
         <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <Select onChange={val => changeMonth(val)} style={{ width: 150 }} >
+            <Select onChange={(val: string) => changeMonth(val)} style={{ width: 150 }} >
                 {reportMonthList.map(data => {
-                    return <Select.Option value={data.month_report}>{data.month_report}</Select.Option>
+                    return <Select.Option key={data.report_id} value={data.report_id}>{data.month_report}</Select.Option>
                 })}
             </Select>
         </div>
-       
+        {reportId && reportRow === null ? <div style={{ marginLeft: 15, width: 400 }} className='space-between-component'>
+            <Alert type='warning' showIcon message='ไม่พบข้อมูลเงินเดือนของพนักงานคนนี้ในเดือนที่เลือก' />
+        </div> : <></>}
+
 
         <div style={{ width: 1280, margin: '50px auto', position: 'relative' }} id='page-pdf' ref={ref}>
             <div className='space-between-component' style={{marginBottom:'0.2cm'}}>
@@ -183,7 +150,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
             </div>
             <div className='space-between-component1' style={{ width: '100%' }}>
                 <span className='A4-Font' style={{ marginRight: 15 }}>ชื่อ-สกุล</span>
-                <span className='A4-Font' >{dataSource.firstname + ' ' + dataSource.lastname}</span>
+                <span className='A4-Font' >{fullname}</span>
                 <span className='A4-Font' style={{ float: 'right' }}>{reportThaiMonth ? '25 ' + reportThaiMonth : ''}</span>
                 <span className='A4-Font' style={{ marginRight: 15, float: 'right' }}>วันที่จ่าย </span>
             </div>
@@ -202,49 +169,49 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 </tr>
                 <tr>
                     <td>เงินเดือน</td>
-                    <td>{reportSource.salary}</td>
+                    <td>{field('salary')}</td>
                     <td>ภาษีเงินได้</td>
-                    <td>-{reportSource.tax}</td>
+                    <td>-{field('tax')}</td>
                     <td>รวมเงินได้</td>
                     <td>{summaryOfTotal.gross_total}</td>
                 </tr>
                 <tr>
                     <td>โอที</td>
-                    <td>{reportSource.overtime}</td>
+                    <td>{field('overtime')}</td>
                     <td>ประกันสังคม</td>
-                    <td>-{reportSource.social_security}</td>
+                    <td>-{field('social_security')}</td>
                     <td>รวมเงินหัก</td>
                     <td>-{summaryOfTotal.deuction_total}</td>
                 </tr>
                 <tr>
                     <td>เบี้ยเลี้ยง</td>
-                    <td>{reportSource.allowance}</td>
+                    <td>{field('allowance')}</td>
                     <td>มาสาย</td>
-                    <td>-{reportSource.late}</td>
+                    <td>-{field('late')}</td>
                     <td></td>
                     <td></td>
                 </tr>
                 <tr>
                     <td>น้ำมัน</td>
-                    <td>{reportSource.fuel}</td>
+                    <td>{field('fuel')}</td>
                     <td>ขาด</td>
-                    <td>-{reportSource.absent}</td>
+                    <td>-{field('absent')}</td>
                     <td></td>
                     <td></td>
                 </tr>
                 <tr>
                     <td>นายหน้า</td>
-                    <td>{reportSource.agent}</td>
+                    <td>{field('agent')}</td>
                     <td>ภาษีนายหน้า</td>
-                    <td>-{reportSource.agent_tax}</td>
+                    <td>-{field('agent_tax')}</td>
                     <td></td>
                     <td></td>
                 </tr>
                 <tr>
                     <td>โบนัส</td>
-                    <td>{reportSource.bonus}</td>
+                    <td>{field('bonus')}</td>
                     <td>ภาษีโบนัส</td>
-                    <td>-{reportSource.bonus_tax}</td>
+                    <td>-{field('bonus_tax')}</td>
                     <td></td>
                     <td></td>
                 </tr>
@@ -252,10 +219,18 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                     <td></td>
                     <td></td>
                     <td>เงินกู้,เงินยืมบริษัท</td>
-                    <td>-{reportSource.lending}</td>
+                    <td>-{field('lending')}</td>
                     <td></td>
                     <td></td>
                 </tr>
+                {showFund ? <tr>
+                    <td></td>
+                    <td></td>
+                    <td>กองทุน</td>
+                    <td>-{field('fund')}</td>
+                    <td></td>
+                    <td></td>
+                </tr> : null}
                 <tr>
                     <td >รวมรายได้</td>
                     <td >{summaryOfTotal.gross_total}</td>
@@ -266,10 +241,11 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 </tr>
             </table>
             <div>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ประกันสังคมสะสม : {totalSocialandLate.total_security_social} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*มาสายสะสม : {totalSocialandLate.total_late} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ขาดสะสม : {totalSocialandLate.total_absent} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*เงินยืมที่จ่าย : {totalSocialandLate.total_lending} </span>
+                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ประกันสังคมสะสม : {formatMoney(totalSocialandLate.total_security_social)} </span>
+                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*มาสายสะสม : {formatMoney(totalSocialandLate.total_late)} </span>
+                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ขาดสะสม : {formatMoney(totalSocialandLate.total_absent)} </span>
+                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*เงินยืมที่จ่าย : {formatMoney(totalSocialandLate.total_lending)} </span>
+                {showFund ? <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*กองทุนสะสม : {formatMoney(totalSocialandLate.total_fund)} </span> : null}
             </div>
             {/* <div style={{ textAlign: 'right', marginTop: 15 }}>
                 <div>
