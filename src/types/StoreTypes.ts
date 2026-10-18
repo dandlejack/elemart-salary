@@ -1,11 +1,11 @@
-import { ReactChild } from "react";
+import { ReactNode } from "react";
 
 export interface HeaderProps {
-    title: string
-    linkPath?: string
-    nameOfLinkPath: string
-    component?: any
-    modalWidth?:number | string
+    title: ReactNode
+    subTitle?: ReactNode
+    backPath?: string
+    // Page actions shown on the right of the title bar.
+    extra?: ReactNode
 }
 
 export interface IDataProps {
@@ -29,6 +29,8 @@ export interface IDataProps {
     tax: number
     fund?: number
     note?: string
+    // Import-only: number columns whose cell held text and were set to 0. Not saved.
+    _textCells?: string[]
 }
 
 export interface PettyCashAttributesProps {
@@ -45,15 +47,6 @@ export interface PettyCashDataProps {
     attributes:Array<PettyCashAttributesProps>;
     year_of_report:string;
     month_report: string;
-}
-
-export interface ModalProps {
-    modalTitle: string;
-    modalType: string;
-    modalVisible: boolean;
-    getClose: Function;
-    modalForm?: ReactChild;
-    modalWidth?:number | string;
 }
 
 export interface IReportMonthList {

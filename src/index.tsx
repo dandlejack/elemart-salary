@@ -6,11 +6,19 @@ import reportWebVitals from './reportWebVitals';
 import 'antd/dist/antd.css';
 import './A4.css'
 import { BrowserRouter } from 'react-router-dom'
+import { ConfigProvider } from 'antd';
+import thTH from 'antd/lib/locale/th_TH';
+import moment from 'moment';
+import 'moment/locale/th';
+moment.locale('th');
+
 ReactDOM.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ConfigProvider locale={thTH}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ConfigProvider>
   </React.StrictMode>,
   document.getElementById('root')
 );

@@ -1,3 +1,4 @@
+import { DashboardOutlined, FileTextOutlined, SettingOutlined, TeamOutlined, WalletOutlined } from "@ant-design/icons";
 import { DashboardPage } from "../pages/DashboardPage/DashboardPage";
 import { EmployeeInfoPage } from "../pages/EmployeeInfo/EmployeeInfoPage";
 import { EmployeePage } from "../pages/EmployeePage/EmployeePage";
@@ -10,51 +11,56 @@ import { Page } from "../types/Page";
 
 export const RoutePath: Page[] = [
     {
-        pathName: 'หน้าแรก',
+        pathName: 'ภาพรวม',
         path: '/',
         component: DashboardPage,
-        isMenu:true
+        isMenu: true,
+        icon: <DashboardOutlined />
     },
     {
-        pathName: 'รายชื่อพนักงาน',
+        pathName: 'พนักงาน',
         path: '/employee',
         component: EmployeePage,
-        isMenu:true
+        isMenu: true,
+        icon: <TeamOutlined />
     },
     {
-        pathName: 'รายการเงินเดือน',
+        pathName: 'รายงานเงินเดือน',
         path: '/salary-list',
         component: SaralyListPage,
-        isMenu:true
+        isMenu: true,
+        icon: <FileTextOutlined />
     },
     {
         pathName: 'EmployeeInfo',
         path: '/EmployeeInfo/:id',
         component: EmployeeInfoPage,
-        isMenu:false
+        isMenu: false
     },
     {
         pathName: 'ReportInfo',
         path: '/ReportInfo/:id',
         component: SalaryInfoPage,
-        isMenu:false
+        isMenu: false
     },
     {
         pathName: 'สมุดเงินสดย่อย',
         path: '/PettyCashBook',
         component: PettyCashBookPage,
-        isMenu:true
+        isMenu: true,
+        icon: <WalletOutlined />
     },
     {
         pathName: 'PettyCashInfo',
         path: '/PettyCashInfo/:id',
         component: PettyCashInfoPage,
-        isMenu:false
+        isMenu: false
     },
     {
-        pathName: 'Setting',
+        pathName: 'ตั้งค่า',
         path: '/setting',
         component: SettingPage,
-        isMenu:true
+        isMenu: true,
+        icon: <SettingOutlined />
     },
 ]

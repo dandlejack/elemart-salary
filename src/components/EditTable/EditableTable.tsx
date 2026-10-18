@@ -1,171 +1,141 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button, Table, Popconfirm } from 'antd'
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import {
     EditableCell,
     EditableRow,
 } from './EditableCell';
-import { TablePaginationConfig } from 'antd/lib/table';
-import { EmployeeApi } from '../../api/EmployeeApi';
+import { EmployeeApi, IEmployeeListItem } from '../../api/EmployeeApi';
 import { TableProps } from '../../types/EditTableTypes';
-import { calcAgentTax } from '../../utils/Salary';
+import { calcAgentTax, normalizeName, toNumber } from '../../utils/Salary';
+import { stickyHeader } from '../../utils/TableLayout';
 
+// Works on copies so the caller's rows only change through `getData` (cancel can always revert).
+// `key` is the running row number shown in the first column.
+const toRows = (data: any[]) => (data || []).map(({ operation, ...row }: any, index: number) => ({ ...row, key: index + 1 }))
 
+// Each petty cash row's balance is the previous balance plus its receipts minus its payments.
+export const recalcPettyCashBalance = (rows: any[]) => {
+    let balance = 0
+    return rows.map(row => {
+        balance += toNumber(row.received_cash) + toNumber(row.received_bank) - toNumber(row.paid_cash) - toNumber(row.paid_bank)
+        return { ...row, pettycash_total: Math.round(balance * 100) / 100 }
+    })
+}
 
-export const EditableTable: React.FC<TableProps> = (props: any) => {
-    const [dataSources, setDataSource] = useState(props.oldData)
-    const [count, setCount] = useState(props.startCount)
-    const [showData, setShowData] = useState(0)
+const leafColumns = (columns: any[]): any[] => columns.flatMap(col => col.children ? leafColumns(col.children) : [col])
+
+export const EditableTable: React.FC<TableProps> = (props) => {
+    const { tableName, deletable = true } = props
+    const [rows, setRows] = useState<any[]>(() => toRows(props.oldData))
+    const [employees, setEmployees] = useState([] as IEmployeeListItem[])
+    // The rows last sent to the caller; when they come back as `oldData` they are not reloaded.
+    const emitted = useRef<any[] | null>(null)
+    const needsEmployees = leafColumns(props.column).some(col => col.dataIndex === 'fullname' && col.dataType === 'select')
+
     useEffect(() => {
-        if (props.checkEnter)
-            handleAdd()
-        return () => {
-
-        };
-    }, [props.checkEnter]);
-
-    useEffect(() => {
-        setDataSource(props.oldData)
+        if (props.oldData !== emitted.current) setRows(toRows(props.oldData))
     }, [props.oldData]);
 
     useEffect(() => {
-        setShowData(props.showData)
-    }, [props.showData]);
+        emitted.current = rows
+        if (props.getData !== undefined) props.getData(rows)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rows])
 
     useEffect(() => {
-        dataSources.map((data: any, index: number) => {
-            data.key = index + 1
-            handleOperation(data);
-            return data;
-        });
-        if (props.getData !== undefined) props.getData(dataSources)
-    }, [dataSources])
+        if (needsEmployees) EmployeeApi.findAllEmployees().then(setEmployees).catch(() => setEmployees([]))
+    }, [needsEmployees]);
 
-    const handleOperation = (data: any) => {
-        data.operation = (
-            <Popconfirm
-                title="Sure to delete?"
-                onConfirm={() => handleDelete(data.key)}
-            >
-                <a style={{ color: 'red' }}>Delete</a>
-            </Popconfirm>
-        );
-        return data.operation
-    };
+    const update = (next: any[]) => setRows(tableName === 'petty-cash' ? recalcPettyCashBalance(next) : next)
 
     const handleDelete = (key: number) => {
-        const filterData = dataSources.filter((item: any) => item.key !== key)
-        setDataSource(filterData);
-        setCount(count - 1)
+        update(toRows(rows.filter((item: any) => item.key !== key)))
     };
 
     const handleSave = (row: any) => {
-        if (props.tableName === 'salary-table') {
+        const previous = rows.find((item: any) => item.key === row.key)
+        if (tableName === 'salary-table' && previous) {
             // Social security is taken as entered (rates vary by period). Agent tax follows the agent amount
             // only when that amount was edited, so a manually corrected agent tax is kept otherwise.
-            const previous = dataSources.find((item: any) => item.key === row.key)
-            if (previous && previous.agent !== row.agent) row.agent_tax = calcAgentTax(row.agent)
-        } else if (props.tableName === 'petty-cash') {
-            if (row.key === 1) {
-                row.pettycash_total = (row.received_cash + row.received_bank) - (row.paid_cash + row.paid_bank)
-            } else {
-                const findLastestTotal = dataSources.find(data => data.key === row.key - 1)
-                row.pettycash_total = findLastestTotal.pettycash_total + (row.received_cash + row.received_bank) - (row.paid_cash + row.paid_bank)
-            }
-            if(row.description === undefined){
-                row.description = '-'
+            if (previous.agent !== row.agent) row.agent_tax = calcAgentTax(row.agent)
+            // A name picked from the employee list links the row to that employee.
+            if (previous.fullname !== row.fullname) {
+                const employee = employees.find(e => normalizeName(e.fullname) === normalizeName(row.fullname))
+                row.employees_id = employee ? employee.employee_id : undefined
             }
         }
-        const newData = [...dataSources];
-        const index = newData.findIndex((item: any) => row.key === item.key);
-        const item = newData[index];
-        newData.splice(index, 1, {
-            ...item,
-            ...row,
-        });
-        setDataSource(newData);
+        update(rows.map((item: any) => item.key === row.key ? { ...item, ...row } : item));
     };
 
-    const components = {
-        body: {
-            row: EditableRow,
-            cell: EditableCell,
-        },
-    };
+    const handleAdd = () => {
+        const newRow: any = { key: rows.length + 1 }
+        leafColumns(props.column).forEach((col: any) => {
+            if (col.dataIndex === 'key' || col.dataIndex === 'operation') return
+            newRow[col.dataIndex] = col.dataType === 'number' ? 0 : ''
+        })
+        // New petty cash entries usually belong to the same day as the previous one.
+        if (tableName === 'petty-cash' && rows.length > 0) newRow.dateInMonth = rows[rows.length - 1].dateInMonth
+        update([...rows, newRow])
+    }
 
-    const mapColumns = (col: any) => {
-        if (!col.editable) {
-            return col;
-        }
-        const newCol = {
+    const employeeNames = employees.map(e => e.fullname)
+    const mapColumns = (col: any): any => {
+        if (col.children) return { ...col, children: col.children.map(mapColumns) }
+        if (!col.editable) return col
+        return {
             ...col,
             onCell: (record: any) => ({
                 record,
                 editable: col.editable,
                 dataIndex: col.dataIndex,
                 title: col.title,
-                children: col.children,
                 dataType: col.dataType,
-                formType: props.formType,
+                options: col.dataType === 'select' ? employeeNames : undefined,
                 handleSave,
             }),
         };
-        if (col.children) {
-            newCol.children = col.children.map(mapColumns);
-        }
-        return newCol;
     };
-    const canEditChildColumns = props.column.map(mapColumns);
-    const handleAdd = () => {
-        const storeData = {};
-        props.column.forEach((data: any) => {
-            if (data.children) {
-                data.children.forEach((insideChildren: any) => {
-                    if (insideChildren.dataType === 'number') {
-                        Object.assign(storeData, { [insideChildren.dataIndex]: 0 });
-                    } else {
-                        Object.assign(storeData, { [insideChildren.dataIndex]: '-' });
-                    }
-                });
-            } else {
-                if (data.dataType === 'number') {
-                    Object.assign(storeData, { [data.dataIndex]: 0 });
-                } else if (data.dataType === 'action') {
-                    Object.assign(storeData, { [data.dataIndex]: handleOperation(data) })
-                } else {
-                    Object.assign(storeData, { [data.dataIndex]: '-' });
-                    Object.assign(storeData, { key: count });
-                    Object.assign(storeData, { no: count });
-                }
-            }
-        });
-
-        const newData = {
-            // key: count,
-            ...storeData,
-        };
-        setCount(count + 1);
-        setDataSource([...dataSources, newData]);
+    const columns = props.column.filter((col: any) => col.dataIndex !== 'operation').map(mapColumns)
+    if (deletable) {
+        columns.push({
+            title: '',
+            key: 'operation',
+            dataIndex: 'operation',
+            width: 56,
+            align: 'center',
+            render: (_: any, record: any) => (
+                <Popconfirm
+                    title={record.fullname ? <>ลบแถวของ <b>{record.fullname}</b>?</> : 'ลบแถวนี้?'}
+                    okText='ลบ'
+                    cancelText='ยกเลิก'
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => handleDelete(record.key)}
+                >
+                    <Button type='text' danger size='small' icon={<DeleteOutlined />} title='ลบแถว' />
+                </Popconfirm>
+            ),
+        })
     }
 
-    const AddBtn = () => {
-        return (<>
-            <Button onClick={handleAdd} style={{width:50,marginLeft:10,marginBottom:10}} type='primary' >
-                +
-            </Button>
-        </>
-        );
-    };
-    return <div>
-        {props.tableName === 'petty-cash' ? <AddBtn /> : null }
+    return <div className='editing-table'>
         <Table
-            columns={canEditChildColumns}
-            dataSource={dataSources}
-            components={components}
+            columns={columns}
+            dataSource={rows}
+            components={{ body: { row: EditableRow, cell: EditableCell } }}
             bordered
+            size='middle'
             style={{ width: '100%' }}
-            // pagination={props.ablePagination}
-            pagination={{ pageSize: showData }}
-            scroll={{ x: '100vw', y: '100%' }}
+            scroll={{ x: 'max-content' }}
+            {...(props.showData === 0 ? {
+                pagination: false,
+                sticky: props.sticky === false ? undefined : stickyHeader,
+            } : {
+                pagination: { pageSize: props.showData },
+            })}
+            summary={props.summary}
+            rowClassName={props.rowClassName}
         />
+        {props.addable ? <Button type='dashed' block icon={<PlusOutlined />} onClick={handleAdd} style={{ marginTop: 8 }}>เพิ่มรายการ</Button> : null}
     </div>
 }

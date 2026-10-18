@@ -39,6 +39,13 @@ export const calcAgentTax = (agent: number) => Math.round((agent || 0) * AGENT_T
 // Names are matched by exact string, so compare and send them trimmed with single spaces.
 export const normalizeName = (name: string) => (name || '').replace(/\s+/g, ' ').trim()
 
+// Rows without an employee name, e.g. the total row of an Excel sheet imported before blank names
+// were skipped (stored as "undefined -"). They are not employees and must not be counted.
+export const isNamelessRow = (row: any) => {
+    const name = normalizeName(row && row.fullname !== undefined && row.fullname !== null ? String(row.fullname) : '')
+    return name === '' || name === '-' || /^undefined(\s|$)/.test(name)
+}
+
 export const isNumeric = (value: any) =>
     typeof value === 'number' ? !isNaN(value) : typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))
 

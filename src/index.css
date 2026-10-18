@@ -15,53 +15,143 @@ code {
     monospace;
 }
 
-#components-layout-demo-top-side-2 .logo {
-  float: left;
-  width: 120px;
-  height: 31px;
-  margin: 16px 24px 16px 0;
-  background: rgba(255, 255, 255, 0.3);
-}
-
 .ant-layout {
   background-color: #fff !important;
   height: 100%;
 }
-.ant-layout-header {
-  background: #fff !important;
-  height: 72px !important;
-}
-.ant-row-rtl #components-layout-demo-top-side-2 .logo {
-  float: right;
-  margin: 16px 0 16px 24px;
-}
+
+/* Sidebar */
 .siderHeader {
-  /* border-bottom: 2px solid #e7e7e7; */
-  border-right: 2px solid #e7e7e7;
+  border-right: 1px solid #f0f0f0;
 }
-.contentHeader {
-  padding:0 10px !important;
-  border-bottom: 2px solid #e7e7e7;
-  font-size: 1rem;
-  font-weight: bold;
+.siderHeader .ant-layout-sider-zero-width-trigger {
+  top: 12px;
+  z-index: 20;
 }
-.site-layout-background {
-  background: #fff;
+.sider-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
 }
+.sider-logo img {
+  height: 26px;
+}
+.sider-logo span {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+/* Content: the header stays visible while the page scrolls inside .right-content */
 .right-content {
   overflow-y: auto;
 }
-.createBtn {
-  height: 30px !important;
-  position:absolute !important;
-  top:25% !important;
-  right:0px !important;
-  border:0px !important;
-  font-size:16px !important; 
-  font-weight:600 !important;
+.contentHeader.ant-layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 64px;
+  line-height: normal;
+  padding: 0 24px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
-.ant-descriptions-bordered .ant-descriptions-item-label {
-  background-color: #fcad3d !important;
-  color: #000;
-  font-weight: bold;
+.contentHeader-title {
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contentHeader-back {
+  color: inherit;
+  font-size: 16px;
+}
+.contentHeader-subtitle {
+  font-size: 14px;
+  font-weight: normal;
+  color: #8c8c8c;
+}
+.page-body {
+  padding: 16px 24px 48px;
+}
+/* Small screens: the sidebar collapses to a toggle button that sits over the header's left edge */
+@media (max-width: 991px) {
+  .contentHeader.ant-layout-header {
+    padding-left: 52px;
+    padding-right: 12px;
+  }
+  .page-body {
+    padding: 12px 12px 48px;
+  }
+  .contentHeader-subtitle {
+    display: none;
+  }
+}
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.page-toolbar-spacer {
+  flex: 1;
+}
+
+/* Tables */
+.ant-table-thead > tr > th {
+  white-space: nowrap;
+}
+.money-zero {
+  color: #bfbfbf;
+}
+/* Imported salary rows that could not be matched to an employee, or rows without a name */
+.row-warning > td {
+  background: #fff7e6 !important;
+}
+/* A number cell that held text in the imported Excel file and was set to 0 */
+.cell-text-warning {
+  color: #d46b08;
+  font-weight: 600;
+}
+.salary-summary-row > td {
+  font-weight: 600;
+  background: #fafafa;
+}
+.editable-cell-value-wrap {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 4px;
+  min-height: 24px;
+  border: 1px dashed transparent;
+}
+.editable-cell-value-wrap:hover {
+  border-color: #d9d9d9;
+  background: #fff;
+}
+.editing-table .ant-table {
+  outline: 2px solid #91d5ff;
+}
+
+/* Dashboard */
+.kpi-row .ant-card {
+  height: 100%;
+}
+.chart-box {
+  position: relative;
+  height: 320px;
 }

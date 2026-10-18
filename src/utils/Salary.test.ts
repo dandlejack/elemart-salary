@@ -1,4 +1,13 @@
-import { calcAgentTax, calcFund, calcSalaryTotals, calcSocialSecurity, formatMoney, isFundMonth, normalizeName, toNumber } from './Salary'
+import { calcAgentTax, calcFund, calcSalaryTotals, calcSocialSecurity, formatMoney, isFundMonth, isNamelessRow, normalizeName, toNumber } from './Salary'
+
+describe('isNamelessRow', () => {
+    it('flags rows without an employee name', () => {
+        expect(isNamelessRow({ fullname: 'undefined -' })).toBe(true)
+        expect(isNamelessRow({ fullname: '  ' })).toBe(true)
+        expect(isNamelessRow({})).toBe(true)
+        expect(isNamelessRow({ fullname: 'นายธานี แซ่เอี๊ย' })).toBe(false)
+    })
+})
 
 describe('calcSocialSecurity', () => {
     it('caps at 750 before 2026', () => {

@@ -1,59 +1,73 @@
-import React, { useState } from 'react'
-import { Button, DatePicker, Input, notification } from 'antd'
+import React, { useEffect, useState } from 'react'
+import { Alert, Button, DatePicker, message, Space, Typography } from 'antd'
+import moment from 'moment'
 import { EditableTable } from '../EditTable/EditableTable'
 import { AddPettyCashColumn } from '../../mockData/mockColumnTable'
-import { PettyCashAttributesProps, PettyCashDataProps } from '../../types/StoreTypes'
 import { PettyCashApi } from '../../api/PettyCashApi'
-import { CustomResult } from '../CustomResult/CustomResult'
+import { currentMonthReport, formatMonthReport, sortNewestFirst } from '../../utils/Month'
+import { formatMoney, toNumber } from '../../utils/Salary'
 
-export const AddPettyCashForm: React.FC = () => {
-    const [dataTable, setdataTable] = useState({
-        attributes: [],
-        month_report: '',
-        year_of_report: ''
-    } as PettyCashDataProps)
-    const [visiblity, setVisiblity] = useState(false)
-    const [alertInputMonth, setAlertInputMonth] = useState(false);
+interface Props {
+    // Existing petty cash months (full records), for the duplicate warning and the carried-forward balance.
+    existing: any[]
+    onDone: () => void
+    onDirtyChange?: (dirty: boolean) => void
+}
+
+export const AddPettyCashForm: React.FC<Props> = ({ existing, onDone, onDirtyChange }) => {
+    const [month, setMonth] = useState(currentMonthReport())
+    const [rows, setRows] = useState([] as any[])
+    const [initialRows, setInitialRows] = useState([] as any[])
+    const [saving, setSaving] = useState(false)
+
+    // Start the month with the latest month's ending balance carried forward.
+    const latest = sortNewestFirst(existing)[0]
+    const latestRows = latest ? (latest.attributes || []) : []
+    const carried = latestRows.length > 0 ? toNumber(latestRows[latestRows.length - 1].pettycash_total) : null
+    useEffect(() => {
+        if (carried !== null && carried !== 0) {
+            setInitialRows([{ dateInMonth: 1, description: 'ยอดยกมา', received_cash: carried, received_bank: 0, paid_cash: 0, paid_bank: 0, pettycash_total: carried }])
+        }
+    }, [carried]);
+
+    useEffect(() => {
+        if (onDirtyChange) onDirtyChange(rows.length > initialRows.length)
+    }, [rows.length, initialRows.length, onDirtyChange]);
+
+    const monthExists = existing.some(item => item.month_report === month)
 
     const onSave = async () => {
-        if (dataTable.attributes.length > 0 && dataTable.month_report !== '') {
-            await PettyCashApi.insertPettyCashReport(dataTable).then(res => {
-                setVisiblity(true)
-            })
-        } else {
-            setAlertInputMonth(!alertInputMonth)
+        if (month === '') {
+            message.error('กรุณาเลือกเดือน')
+            return
         }
+        if (rows.length === 0) {
+            message.error('ยังไม่มีรายการ กรุณาเพิ่มอย่างน้อย 1 รายการ')
+            return
+        }
+        setSaving(true)
+        try {
+            await PettyCashApi.insertPettyCashReport({ month_report: month, year_of_report: month.split('/')[1], attributes: rows })
+            message.success(`บันทึกสมุดเงินสดย่อย ${formatMonthReport(month)} แล้ว`)
+            onDone()
+        } catch (e) {
+            message.error('บันทึกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ')
+        }
+        setSaving(false)
     }
-
-    const notificationOpen = () => {
-        notification['error']({
-            message: 'เกิดข้อผิดพลาด',
-            description: 'กรุณาเลือกเดือน-ปีของรายงาน',
-            style: {
-                width: 600,
-            },
-            duration: 3
-        })
-        setAlertInputMonth(!alertInputMonth)
-    }
-
-    const getTableData = (data: Array<PettyCashAttributesProps>) => {
-        setdataTable({ ...dataTable, attributes: data })
-    }
-
 
     return <div>
-        <div style={{ marginBottom: 15 }}>
-            <span>เดือนที่</span> <DatePicker format={'MM/YYYY'} picker="month" onChange={(date: any, dateString: string) => setdataTable({ ...dataTable, month_report: dateString, year_of_report: dateString.split('/')[1] })} />
-
+        <Space style={{ marginBottom: 16 }} align='center'>
+            <span>เดือน</span>
+            <DatePicker format={'MM/YYYY'} picker="month" allowClear={false} value={month ? moment(month, 'MM/YYYY') : null} onChange={(date: any, dateString: string) => setMonth(dateString)} />
+            <Typography.Text type='secondary'>{formatMonthReport(month)}</Typography.Text>
+        </Space>
+        {monthExists ? <Alert style={{ marginBottom: 16 }} type='warning' showIcon message={`มีสมุดเงินสดย่อย ${formatMonthReport(month)} อยู่แล้ว — ถ้าบันทึกจะได้ซ้ำ ถ้าต้องการแก้ไขให้เปิดเดือนเดิม`} /> : null}
+        {carried !== null && carried !== 0 && latest ? <Alert style={{ marginBottom: 16 }} type='info' showIcon
+            message={`ใส่ยอดยกมาจาก ${formatMonthReport(latest.month_report)} (${formatMoney(carried)} บาท) เป็นรายการแรกให้แล้ว — แก้ไขหรือลบได้`} /> : null}
+        <EditableTable column={AddPettyCashColumn} getData={setRows} oldData={initialRows} showData={0} sticky={false} tableName='petty-cash' addable />
+        <div style={{ marginTop: 16, textAlign: 'right' }}>
+            <Button type='primary' size='large' onClick={onSave} loading={saving} disabled={rows.length === 0}>บันทึกสมุดเงินสดย่อย</Button>
         </div>
-        <div>
-            <EditableTable column={AddPettyCashColumn} getData={getTableData} oldData={dataTable.attributes} ablePagination={{ disabled: false }} showData={15} startCount={1} formType={'salary-month'} tableName='petty-cash' />
-        </div>
-        <div style={{ margin: '15px auto', textAlign: 'center' }}>
-            <Button type='primary' onClick={onSave}>เพิ่มรายงานเงินเดือน</Button>
-        </div>
-        {visiblity ? <CustomResult title='เพิ่มข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} /> : null}
-        {alertInputMonth?notificationOpen():null}
     </div>
 }

@@ -1,36 +1,17 @@
-import { Alert, Button, InputNumber, notification, Select, Statistic, Switch } from "antd";
-import React, { useEffect, useRef, useState } from "react";
-import { EmployeeApi } from "../../api/EmployeeApi";
+import { Alert, Button, Card, DatePicker, Empty, Form, InputNumber, message, Modal, Select, Skeleton, Space, Tag, Typography } from "antd";
+import { DownloadOutlined, EditOutlined } from "@ant-design/icons";
+import moment from "moment";
+import React, { useEffect, useState } from "react";
+import { EmployeeApi, isResigned } from "../../api/EmployeeApi";
 import { ReportApi } from "../../api/ReportApi";
 import { HeaderComponent } from "../../components/HeaderComponent";
-import logo from '../../images/logo-com.png'
-import { AddComma } from '../../utils/AddComma'
-import { calcSalaryTotals, calcSocialSecurity, formatMoney, normalizeName } from '../../utils/Salary'
-import { IReportMonthList, IEmployeeProps, ITotalSocialAndLate } from "../../types/StoreTypes";
-import { GeneratePDF } from "../../components/GeneratePDF/GeneratePDF";
-
-const monthVal = [
-    { key: '01', value: 'ม.ค.' },
-    { key: '02', value: 'ก.พ.' },
-    { key: '03', value: 'มี.ค.' },
-    { key: '04', value: 'เม.ย.' },
-    { key: '05', value: 'พ.ค.' },
-    { key: '06', value: 'มิ.ย.' },
-    { key: '07', value: 'ก.ค.' },
-    { key: '08', value: 'ส.ค.' },
-    { key: '09', value: 'ก.ย.' },
-    { key: '10', value: 'ต.ค.' },
-    { key: '11', value: 'พ.ย.' },
-    { key: '12', value: 'ธ.ค.' },
-]
-
-// "03/2026" (or "12/2025-bonus") -> "มี.ค. 2569"
-const toThaiMonth = (monthReport: string) => {
-    const [monthNum, year] = monthReport.split('/')
-    const month = monthVal.find(d => d.key === monthNum)
-    const thaiYear = parseInt(year) + 543
-    return month && !isNaN(thaiYear) ? month.value + ' ' + thaiYear : monthReport
-}
+import { LoadError } from "../../components/LoadError/LoadError";
+import { Payslip, PAYSLIP_WIDTH, ScaledPreview } from "../../components/Payslip/Payslip";
+import { savePayslipsPdf } from "../../components/Payslip/payslipPdf";
+import { calcSocialSecurity, formatMoney, normalizeName } from '../../utils/Salary'
+import { defaultPayDate, formatMonthReport, formatThaiDate, sortNewestFirst } from "../../utils/Month";
+import { useRequest } from "../../utils/useRequest";
+import { ITotalSocialAndLate } from "../../types/StoreTypes";
 
 const emptyTotals: ITotalSocialAndLate = {
     total_security_social: 0,
@@ -42,224 +23,145 @@ const emptyTotals: ITotalSocialAndLate = {
 
 export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
     const { id } = match.params;
-    const ref = useRef<HTMLDivElement>(null)
-    const [reportMonthList, setReportMonthList] = useState([] as Array<IReportMonthList>)
-    const [dataSource, setDataSource] = useState({} as IEmployeeProps)
     const [reportId, setReportId] = useState('')
-    // Salary row of this employee in the selected report; null when the report has no row for them.
-    const [reportRow, setReportRow] = useState(null as any)
-    const [reportThaiMonth, setReportThaiMonth] = useState('')
-    const [totalSocialandLate, setTotalSocialandLate] = useState(emptyTotals);
-    const [currentSalary, setCurrentSalary] = useState(null as number | null)
-    const [editable, setEditable] = useState(false)
-    const fullname = dataSource.fullname || (dataSource.firstname ? dataSource.firstname + ' ' + dataSource.lastname : '')
+    const [payDate, setPayDate] = useState(null as moment.Moment | null)
+    const [downloading, setDownloading] = useState(false)
+    const [editingSalary, setEditingSalary] = useState(false)
+    const [newSalary, setNewSalary] = useState(null as number | null)
+    const [savingSalary, setSavingSalary] = useState(false)
+
+    const employeeRequest = useRequest(async () => {
+        const employee = await EmployeeApi.findEmployeeByEmployeeId(id)
+        if (!employee) return { employee: null, reports: [] }
+        const name = employee.fullname || employee.firstname + ' ' + employee.lastname
+        // Reports created before employees_id was stored can only be matched by name.
+        const reports = sortNewestFirst(await ReportApi.findSalaryList({ employees_id: id, fullname: name }))
+        return { employee, reports }
+    }, [id])
+    const employee = employeeRequest.data?.employee
+    const reports = employeeRequest.data?.reports || []
+    const fullname = employee ? (employee.fullname || employee.firstname + ' ' + employee.lastname) : ''
+    const report = reports.find(r => r.report_id === reportId)
 
     useEffect(() => {
-        const getData = async () => {
-            const employee = await EmployeeApi.findEmployeeByEmployeeId(id)
-            if (!employee) return
-            setDataSource(employee)
-            const name = employee.fullname || employee.firstname + ' ' + employee.lastname
-            document.title = name
-            // Reports created before employees_id was stored can only be matched by name.
-            const reports = await ReportApi.findSalaryList({ employees_id: id, fullname: name })
-            setReportMonthList(reports || [])
-        }
-        getData()
-    }, [id]);
+        if (fullname) document.title = fullname
+    }, [fullname]);
 
+    // Open the latest payslip by default.
     useEffect(() => {
-        if (!reportId || !fullname) return
-        let cancelled = false
-        setReportRow(null)
-        setTotalSocialandLate(emptyTotals)
-        ReportApi.findReportById(reportId).then(report => {
-            if (cancelled) return
-            const row = report && report.attributes.find((a: any) => a.employees_id === id || normalizeName(a.fullname) === normalizeName(fullname))
-            setReportRow(row || null)
-        })
-        ReportApi.findSumLateAndSecuritySocial({ report_id: reportId, employees_id: id, fullname }).then(res => {
-            if (!cancelled && res) setTotalSocialandLate(res)
-        })
-        return () => {
-            cancelled = true
-        };
-    }, [reportId, id, fullname]);
+        if (reports.length > 0 && !reports.some(r => r.report_id === reportId)) changeMonth(reports[0].report_id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reports]);
+
+    const slipRequest = useRequest(async () => {
+        if (!reportId || !fullname) return null
+        const [full, totals] = await Promise.all([
+            ReportApi.findReportById(reportId),
+            ReportApi.findSumLateAndSecuritySocial({ report_id: reportId, employees_id: id, fullname }),
+        ])
+        const row = full && full.attributes.find((a: any) => a.employees_id === id || normalizeName(a.fullname) === normalizeName(fullname))
+        return { row: row || null, totals: totals || emptyTotals }
+    }, [reportId, id, fullname])
 
     const changeMonth = (selectedReportId: string) => {
-        const report = reportMonthList.find(d => d.report_id === selectedReportId)
+        const selected = reports.find(d => d.report_id === selectedReportId)
         setReportId(selectedReportId)
-        setReportThaiMonth(report ? toThaiMonth(report.month_report) : '')
+        setPayDate(selected ? defaultPayDate(selected.month_report) : null)
     }
 
-    const updateSalary = () => {
-        if (!currentSalary || currentSalary <= 0) {
-            notification.error({ message: 'กรุณากรอกเงินเดือนให้ถูกต้อง', duration: 3 })
+    const slip = slipRequest.data && slipRequest.data.row ? {
+        fullname,
+        row: slipRequest.data.row,
+        totals: slipRequest.data.totals,
+        payDate: payDate ? formatThaiDate(payDate) : '',
+    } : null
+
+    const downloadPdf = async () => {
+        if (!slip || !report) return
+        setDownloading(true)
+        try {
+            await savePayslipsPdf([slip], `${fullname} ${formatMonthReport(report.month_report)}.pdf`)
+        } catch (e) {
+            message.error('สร้างไฟล์ PDF ไม่สำเร็จ')
+        }
+        setDownloading(false)
+    }
+
+    const updateSalary = async () => {
+        if (!newSalary || newSalary <= 0) {
+            message.error('กรุณากรอกเงินเดือนให้ถูกต้อง')
             return
         }
-        const data = {
-            current_salary: currentSalary,
-            social_security: calcSocialSecurity(currentSalary)
+        setSavingSalary(true)
+        try {
+            await EmployeeApi.updateEmployeeByEmployeeId(id, { current_salary: newSalary, social_security: calcSocialSecurity(newSalary) })
+            message.success('บันทึกเงินเดือนใหม่แล้ว')
+            setEditingSalary(false)
+            employeeRequest.reload()
+        } catch (e) {
+            message.error('บันทึกไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อ')
         }
-        EmployeeApi.updateEmployeeByEmployeeId(id, data)
+        setSavingSalary(false)
     }
 
-    const field = (key: string) => reportRow ? formatMoney(reportRow[key]) : ''
-    // Payslips before the fund started (no fund value stored) keep their original layout.
-    const showFund = reportRow !== null && reportRow.fund !== undefined && reportRow.fund !== null
-    const totals = reportRow ? calcSalaryTotals(reportRow) : null
-    const summaryOfTotal = {
-        gross_total: totals ? AddComma(totals.gross) : '',
-        deuction_total: totals ? AddComma(totals.deductions) : '',
-        total: totals ? AddComma(totals.net) : ''
-    }
+    const header = <HeaderComponent
+        title={fullname || 'ข้อมูลพนักงาน'}
+        subTitle={employee ? <Space size={8}>
+            {isResigned(employee) ? <Tag>ลาออก</Tag> : <Tag color='green'>ทำงานอยู่</Tag>}
+            <span>เงินเดือนปัจจุบัน {employee.current_salary !== undefined && employee.current_salary !== null ? formatMoney(employee.current_salary) + ' บาท' : '-'}</span>
+        </Space> : null}
+        backPath='/employee'
+        extra={employee ? <Button icon={<EditOutlined />} onClick={() => { setNewSalary(employee.current_salary || null); setEditingSalary(true) }}>แก้ไขเงินเดือน</Button> : null}
+    />
 
-    return <div style={{ marginBottom: 50 }}>
-        <HeaderComponent title='Employee Info' nameOfLinkPath='' />
-        <div style={{ width: '100%', marginTop: 15, marginRight: 10, position: 'relative' }}>
-            {reportRow ? <GeneratePDF document={document.getElementById('page-pdf')} fullname={fullname} reportMonth={reportThaiMonth} /> : <></>}
-        </div>
-        <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <Switch checkedChildren='ยกเลิก' unCheckedChildren='แก้ไข' onChange={e => setEditable(!editable)} />
-        </div>
-        <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <Statistic title="เงินเดือนปัจจุบัน" value={dataSource.current_salary !== undefined && dataSource.current_salary !== null ? AddComma(dataSource.current_salary) + " บาท" : '-'} />
-        </div>
-        {editable ? <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <InputNumber style={{width:150}} min={0} onChange={(salary: number) => setCurrentSalary(salary)} /> <Button type='primary' onClick={updateSalary}>Update</Button>
-        </div> : <></>}
-        <div style={{ marginLeft: 15 }} className='space-between-component'>
-            <Select onChange={(val: string) => changeMonth(val)} style={{ width: 150 }} >
-                {reportMonthList.map(data => {
-                    return <Select.Option key={data.report_id} value={data.report_id}>{data.month_report}</Select.Option>
-                })}
-            </Select>
-        </div>
-        {reportId && reportRow === null ? <div style={{ marginLeft: 15, width: 400 }} className='space-between-component'>
-            <Alert type='warning' showIcon message='ไม่พบข้อมูลเงินเดือนของพนักงานคนนี้ในเดือนที่เลือก' />
-        </div> : <></>}
+    if (employeeRequest.error) return <>{header}<div className='page-body'><LoadError error={employeeRequest.error} onRetry={employeeRequest.reload} /></div></>
+    if (employeeRequest.loading && !employeeRequest.data) return <>{header}<div className='page-body'><Skeleton active /></div></>
+    if (!employee) return <>{header}<div className='page-body'><Empty description='ไม่พบพนักงานคนนี้' /></div></>
 
-
-        <div style={{ width: 1280, margin: '50px auto', position: 'relative' }} id='page-pdf' ref={ref}>
-            <div className='space-between-component' style={{marginBottom:'0.2cm'}}>
-                <img className='company-logo' src={logo} />
-                <div style={{ fontSize: 18, marginTop: 10, fontWeight: 'bolder' }} className='A4-Font'>
-                    <h4>ELE-MART CO., LTD.</h4>
-                    <span>62,63 Phraya Suren Rd, Bang Chan, Khlong Sam Wa, Bangkok 10510</span>
+    return <>
+        {header}
+        <div className='page-body'>
+            {reports.length === 0 ? <Empty description='ยังไม่มีสลิปเงินเดือนของพนักงานคนนี้' /> : <>
+                <div className='page-toolbar'>
+                    <Space>
+                        <span>สลิปเดือน</span>
+                        <Select value={reportId || undefined} onChange={(val: string) => changeMonth(val)} style={{ width: 200 }} showSearch optionFilterProp='children'>
+                            {reports.map(data => <Select.Option key={data.report_id} value={data.report_id}>{formatMonthReport(data.month_report)}</Select.Option>)}
+                        </Select>
+                    </Space>
+                    <Space>
+                        <span>วันที่จ่าย</span>
+                        <DatePicker value={payDate} onChange={setPayDate} format={(value: moment.Moment) => formatThaiDate(value)} allowClear={false} />
+                    </Space>
+                    <div className='page-toolbar-spacer' />
+                    <Button type='primary' icon={<DownloadOutlined />} disabled={!slip} loading={downloading} onClick={downloadPdf}>ดาวน์โหลดสลิป PDF</Button>
                 </div>
-            </div>
-            <div className='space-between-component1' style={{ width: '100%' }}>
-                <span className='A4-Font' style={{ marginRight: 15 }}>ชื่อ-สกุล</span>
-                <span className='A4-Font' >{fullname}</span>
-                <span className='A4-Font' style={{ float: 'right' }}>{reportThaiMonth ? '25 ' + reportThaiMonth : ''}</span>
-                <span className='A4-Font' style={{ marginRight: 15, float: 'right' }}>วันที่จ่าย </span>
-            </div>
-            <div className='space-between-component'>
-            </div>
-            <table className='description-table space-between-component A4-Font'>
-                <tr >
-                    <th></th>
-                    <th></th>
-                </tr>
-                <tr style={{ borderTop: '3px solid #000' }}>
-                    <th style={{ fontSize: '1.7rem', fontWeight: 'bold' }} colSpan={2}>รายได้(Income)</th>
-                    <th style={{ fontSize: '1.7rem', fontWeight: 'bold' }} colSpan={2}>รายการหัก(Deduction)</th>
-                    <th style={{ fontWeight: 'bold' }} colSpan={2}></th>
-
-                </tr>
-                <tr>
-                    <td>เงินเดือน</td>
-                    <td>{field('salary')}</td>
-                    <td>ภาษีเงินได้</td>
-                    <td>-{field('tax')}</td>
-                    <td>รวมเงินได้</td>
-                    <td>{summaryOfTotal.gross_total}</td>
-                </tr>
-                <tr>
-                    <td>โอที</td>
-                    <td>{field('overtime')}</td>
-                    <td>ประกันสังคม</td>
-                    <td>-{field('social_security')}</td>
-                    <td>รวมเงินหัก</td>
-                    <td>-{summaryOfTotal.deuction_total}</td>
-                </tr>
-                <tr>
-                    <td>เบี้ยเลี้ยง</td>
-                    <td>{field('allowance')}</td>
-                    <td>มาสาย</td>
-                    <td>-{field('late')}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>น้ำมัน</td>
-                    <td>{field('fuel')}</td>
-                    <td>ขาด</td>
-                    <td>-{field('absent')}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>นายหน้า</td>
-                    <td>{field('agent')}</td>
-                    <td>ภาษีนายหน้า</td>
-                    <td>-{field('agent_tax')}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td>โบนัส</td>
-                    <td>{field('bonus')}</td>
-                    <td>ภาษีโบนัส</td>
-                    <td>-{field('bonus_tax')}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td>เงินกู้,เงินยืมบริษัท</td>
-                    <td>-{field('lending')}</td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {showFund ? <tr>
-                    <td></td>
-                    <td></td>
-                    <td>กองทุน</td>
-                    <td>-{field('fund')}</td>
-                    <td></td>
-                    <td></td>
-                </tr> : null}
-                <tr>
-                    <td >รวมรายได้</td>
-                    <td >{summaryOfTotal.gross_total}</td>
-                    <td>รวมรายการหัก</td>
-                    <td >-{summaryOfTotal.deuction_total}</td>
-                    <td>เงินได้สุทธิ</td>
-                    <td >{summaryOfTotal.total}</td>
-                </tr>
-            </table>
-            <div>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ประกันสังคมสะสม : {formatMoney(totalSocialandLate.total_security_social)} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*มาสายสะสม : {formatMoney(totalSocialandLate.total_late)} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*ขาดสะสม : {formatMoney(totalSocialandLate.total_absent)} </span>
-                <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*เงินยืมที่จ่าย : {formatMoney(totalSocialandLate.total_lending)} </span>
-                {showFund ? <span className='A4-Font' style={{ marginRight: 7, fontWeight: 'bolder' }}>*กองทุนสะสม : {formatMoney(totalSocialandLate.total_fund)} </span> : null}
-            </div>
-            {/* <div style={{ textAlign: 'right', marginTop: 15 }}>
-                <div>
-                    <span style={{ fontSize: '1.5rem' }}>______________________</span>
-
-                </div>
-                <div >
-                    <span style={{ paddingRight: 25, fontSize: '1.2rem' }}>(นายเทพไชย วราวุฒิ)</span>
-                </div>
-                <div>
-                    <span style={{ paddingRight: 43, fontSize: '1.2rem' }}>กรรมการผู้จัดการ</span>
-                </div>
-            </div> */}
+                {slipRequest.error ? <LoadError error={slipRequest.error} onRetry={slipRequest.reload} /> : null}
+                {slipRequest.loading ? <Skeleton active paragraph={{ rows: 8 }} /> : null}
+                {!slipRequest.loading && slipRequest.data && !slipRequest.data.row
+                    ? <Alert type='warning' showIcon message='ไม่พบข้อมูลเงินเดือนของพนักงานคนนี้ในเดือนที่เลือก' /> : null}
+                {!slipRequest.loading && slip ? <Card bodyStyle={{ padding: 16 }}>
+                    <ScaledPreview width={PAYSLIP_WIDTH}><Payslip {...slip} /></ScaledPreview>
+                </Card> : null}
+            </>}
         </div>
-
-    </div>
+        <Modal
+            title='แก้ไขเงินเดือน'
+            visible={editingSalary}
+            okText='บันทึก'
+            cancelText='ยกเลิก'
+            confirmLoading={savingSalary}
+            onOk={updateSalary}
+            onCancel={() => setEditingSalary(false)}
+            destroyOnClose
+        >
+            <Form layout='vertical'>
+                <Form.Item label='เงินเดือนใหม่ (บาท)' extra={newSalary ? `ประกันสังคมที่ระบบคำนวณ: ${formatMoney(calcSocialSecurity(newSalary))} บาท` : null}>
+                    <InputNumber autoFocus min={0} style={{ width: '100%' }} value={newSalary as any} onChange={(v: any) => setNewSalary(v)} onPressEnter={updateSalary}
+                        formatter={(v: any) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v: any) => (v || '').replace(/,/g, '')} />
+                </Form.Item>
+                <Typography.Text type='secondary'>มีผลกับเงินเดือนปัจจุบันของพนักงานเท่านั้น รายงานเงินเดือนที่บันทึกไปแล้วไม่เปลี่ยน</Typography.Text>
+            </Form>
+        </Modal>
+    </>
 }
