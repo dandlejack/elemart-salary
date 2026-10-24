@@ -4,5 +4,6 @@ export interface Page {
     pathName:string,
     path:string,
     component:React.Component | any,
-    isMenu:boolean
+    isMenu:boolean,
+    icon?: React.ReactNode
 }

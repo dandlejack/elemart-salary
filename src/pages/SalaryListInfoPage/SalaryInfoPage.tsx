@@ -1,157 +1,140 @@
-import { Button, Popconfirm, Switch, Table } from 'antd'
+import { Alert, Button, Empty, Input, message, Skeleton, Table, Typography } from 'antd'
+import { EditOutlined, FileExcelOutlined } from '@ant-design/icons'
 import React, { useEffect, useState } from 'react'
+import { Prompt } from 'react-router-dom'
 import { ReportApi } from '../../api/ReportApi'
 import { HeaderComponent } from '../../components/HeaderComponent'
 import { AddSalaryColumn } from '../../mockData/mockColumnTable'
-import { IReportProps } from '../../types/StoreTypes'
 import { generateExcel } from '../../components/Excel/ExcelComponent'
-import { EditableCell } from '../../components/EditTable/EditableCell'
 import { EditableTable } from '../../components/EditTable/EditableTable'
-import { CustomResult } from '../../components/CustomResult/CustomResult'
-const monthVal = [
-    {
-        key: '01',
-        value: 'ม.ค.'
-    },
-    {
-        key: '02',
-        value: 'ก.พ.'
-    },
-    {
-        key: '03',
-        value: 'มี.ค.'
-    },
-    {
-        key: '04',
-        value: 'เม.ย.'
-    },
-    {
-        key: '05',
-        value: 'พ.ค.'
-    },
-    {
-        key: '06',
-        value: 'มิ.ย.'
-    },
-    {
-        key: '07',
-        value: 'ก.ค.'
-    },
-    {
-        key: '08',
-        value: 'ส.ค.'
-    },
-    {
-        key: '09',
-        value: 'ก.ย.'
-    },
-    {
-        key: '10',
-        value: 'ต.ค.'
-    },
-    {
-        key: '11',
-        value: 'พ.ย.'
-    },
-    {
-        key: '12',
-        value: 'ธ.ค.'
-    },
-]
+import { LoadError } from '../../components/LoadError/LoadError'
+import { MonthPayslipsButton } from '../../components/Payslip/MonthPayslipsButton'
+import { salarySummary } from '../../components/SalarySummary/SalarySummary'
+import { calcSalaryTotals, formatMoney, isNamelessRow, normalizeName } from '../../utils/Salary'
+import { formatMonthReport } from '../../utils/Month'
+import { stickyHeader } from '../../utils/TableLayout'
+import { useRequest } from '../../utils/useRequest'
+import { confirmDiscard, DISCARD_MESSAGE } from '../../utils/confirmDiscard'
+import { useUnsavedChangesWarning } from '../../utils/useUnsavedChangesWarning'
+
+// Row content without UI-only fields, to tell whether the draft differs from what is saved.
+const comparable = (rows: any[]) => JSON.stringify((rows || []).map(({ operation, key, _textCells, ...row }: any) => row))
 
 export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
     const { id } = match.params
-    const [dataSource, setDataSource] = useState([] as Array<IReportProps>);
-    const [monthReport, setMonthReport] = useState('');
-    const [count, setCount] = useState(0);
-    const [visiblity, setVisiblity] = useState(false)
-    const [canEdit, setCanEdit] = useState(false)
+    const request = useRequest(() => ReportApi.findReportById(id), [id])
+    const report = request.data
+    const saved: any[] = report ? report.attributes : []
+    // Edits go to a draft; the saved rows only change after a successful save, so cancel always reverts.
+    const [draft, setDraft] = useState(null as any[] | null)
+    const [saving, setSaving] = useState(false)
+    const [search, setSearch] = useState('')
+    const editing = draft !== null
+    const dirty = editing && comparable(draft!) !== comparable(saved)
+    const monthLabel = report ? formatMonthReport(report.month_report) : ''
+    useUnsavedChangesWarning(dirty)
+
     useEffect(() => {
-        ReportApi.findAllReports({
-            filterObject: {
-                report_id: id
-            }
-        }).then(res => {
-            const filterThaiMonth = monthVal.filter(d => d.key === res[0].month_report.split('/')[0])[0].value
-            setMonthReport(filterThaiMonth + ' ' + res[0].month_report.split('/')[1])
-            setDataSource(res[0].attributes)
-            setCount(res[0].attributes.length)
-        })
-        ReportApi.findTest({
-            filterObject: {
-                month_report: '03/2021',
-                type:'lending'
-            }
-        }).then(res => {
-            console.log(res)
-        })
-        return () => {
-        };
-    }, [id]);
+        if (monthLabel) document.title = 'เงินเดือน ' + monthLabel
+    }, [monthLabel]);
 
-    // const handleDelete = (key: number) => {
-    //     const filterData = dataSource.filter((item: any) => item.key !== key)
-    //     setDataSource(filterData);
-    //     setCount(count - 1)
-    // };
+    const startEdit = (rows: any[] = saved) => setDraft(rows)
+    const cancelEdit = () => confirmDiscard(dirty, () => setDraft(null))
 
-    // const handleOperation = (data: any) => {
-    //     data.operation = (
-    //         <Popconfirm
-    //             title="Sure to delete?"
-    //             onConfirm={() => handleDelete(data.key)}
-    //         >
-    //             <a style={{ color: 'red' }}>Delete</a>
-    //         </Popconfirm>
-    //     );
-    //     return data.operation
-    // };
-
-    // useEffect(() => {
-    //     dataSource.map((data: any, index: number) => {
-    //         data.key = index + 1
-    //         handleOperation(data);
-    //         return data;
-    //     });
-    // }, [dataSource])
-    const getTableData = (data: any) => {        // 
-
-        setDataSource(data)
-    }
-    const updateData = () => {
-        const data = {
-            attributes:dataSource
+    const save = async () => {
+        if (!draft) return
+        const attributes = draft.map(({ operation, _textCells, ...row }: any) => row)
+        setSaving(true)
+        try {
+            const ok = await ReportApi.updateReportByReportID(id, { attributes })
+            if (!ok) throw new Error('not saved')
+            request.setData({ ...report, attributes })
+            setDraft(null)
+            message.success('บันทึกการแก้ไขแล้ว')
+        } catch (e) {
+            message.error('บันทึกการแก้ไขไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่')
         }
-        ReportApi.updateReportByReportID(id,data).then(res=>{
-            setVisiblity(!visiblity)
-        })
+        setSaving(false)
     }
-    
+
+    const exportExcel = () => generateExcel(
+        AddSalaryColumn,
+        monthLabel,
+        saved.filter(row => !isNamelessRow(row)).map((row: any) => ({ ...row, net: calcSalaryTotals(row).net }))
+    )
+
+    const namelessRows = saved.filter(isNamelessRow)
+    const employees = saved.filter(row => !isNamelessRow(row))
+    const netTotal = employees.reduce((total, row) => total + calcSalaryTotals(row).net, 0)
+    const grossTotal = employees.reduce((total, row) => total + calcSalaryTotals(row).gross, 0)
+    const shownRows = search.trim() === ''
+        ? saved
+        : saved.filter((row: any) => normalizeName(row.fullname || '').includes(normalizeName(search)))
+
+    const headerExtra = editing
+        ? <>
+            <Button onClick={cancelEdit} disabled={saving}>ยกเลิก</Button>
+            <Button type='primary' onClick={save} loading={saving} disabled={!dirty}>บันทึกการแก้ไข</Button>
+        </>
+        : report ? <>
+            <MonthPayslipsButton reportId={id} monthReport={report.month_report} rows={saved} />
+            <Button icon={<FileExcelOutlined />} onClick={exportExcel}>ส่งออก Excel</Button>
+            <Button type='primary' icon={<EditOutlined />} onClick={() => startEdit()}>แก้ไข</Button>
+        </> : null
+
     return <>
-        <HeaderComponent title={monthReport} nameOfLinkPath='' />
-        <div style={{ width: 250,marginTop:15 }}>
-            <Switch checkedChildren='ยกเลิกการแก้ไข' unCheckedChildren='แก้ไข' onChange={e => setCanEdit(!canEdit)} /> 
+        <Prompt when={dirty} message={DISCARD_MESSAGE} />
+        <HeaderComponent
+            eyebrow='รายงานเงินเดือน'
+            title={monthLabel ? `เงินเดือน ${monthLabel}` : 'รายงานเงินเดือน'}
+            subTitle={report ? `${employees.length} คน · ยอดสุทธิ ${formatMoney(netTotal)} บาท` : null}
+            backPath='/salary-list'
+            extra={headerExtra}
+        />
+        <div className='page-body'>
+            {request.error ? <LoadError error={request.error} onRetry={request.reload} /> : null}
+            {request.loading && !report ? <Skeleton active paragraph={{ rows: 10 }} /> : null}
+            {!request.loading && !request.error && !report ? <Empty description='ไม่พบรายงานนี้' /> : null}
+            {report && !editing && namelessRows.length > 0 ? <Alert
+                type='warning'
+                showIcon
+                className='mb-16'
+                message={`พบ ${namelessRows.length} แถวที่ไม่มีชื่อพนักงาน (แถวสีส้ม)`}
+                description='น่าจะเป็นแถวยอดรวมที่ติดมาจากไฟล์ Excel ตอนนำเข้า — ยอดรวม สลิป และไฟล์ Excel ที่ส่งออกไม่นับแถวเหล่านี้แล้ว แนะนำให้ลบออกจากรายงาน'
+                action={<Button size='small' onClick={() => startEdit(saved.filter(row => !isNamelessRow(row)))}>ลบแถวเหล่านี้</Button>}
+            /> : null}
+            {report && editing ? <Alert
+                type='info'
+                showIcon
+                className='mb-16'
+                message='โหมดแก้ไข: คลิกที่ช่องเพื่อแก้ไข — Tab ไปช่องถัดไป, Enter ไปแถวถัดไป, Esc ยกเลิกช่องนั้น'
+                description={dirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก กด "บันทึกการแก้ไข" ด้านบนเมื่อเสร็จ' : null}
+            /> : null}
+            {report && !editing ? <div className='summary-strip'>
+                <span className='summary-chip'><span className='summary-chip-value'>{employees.length}</span> คน</span>
+                <span className='summary-chip'><span className='summary-chip-label'>รวมเงินได้</span><span className='summary-chip-value'>{formatMoney(grossTotal)}</span> บาท</span>
+                <span className='summary-chip'><span className='summary-chip-label'>ยอดสุทธิ</span><span className='summary-chip-value'>{formatMoney(netTotal)}</span> บาท</span>
+            </div> : null}
+            {report && !editing ? <div className='page-toolbar'>
+                <Input.Search allowClear placeholder='ค้นหาชื่อ' className='toolbar-search' onChange={e => setSearch(e.target.value)} />
+                {search ? <Typography.Text type='secondary'>พบ {shownRows.length} คน</Typography.Text> : null}
+            </div> : null}
+            {report && !editing ?
+                <Table
+                    rowKey={(row: any) => String(row.key) + row.fullname}
+                    columns={AddSalaryColumn}
+                    dataSource={shownRows}
+                    bordered
+                    size='middle'
+                    pagination={false}
+                    scroll={{ x: 'max-content' }}
+                    sticky={stickyHeader}
+                    summary={salarySummary(AddSalaryColumn)}
+                    rowClassName={(row: any) => isNamelessRow(row) ? 'row-warning' : ''}
+                /> : null}
+            {report && editing ?
+                <EditableTable column={AddSalaryColumn} getData={setDraft} oldData={draft!} showData={0} tableName='salary-table' summary={salarySummary(AddSalaryColumn)} rowClassName={(row: any) => isNamelessRow(row) ? 'row-warning' : ''} />
+                : null}
         </div>
-        <div style={{ marginTop: 15, marginRight: 15, textAlign: 'right' }}>
-            <Button
-                type='primary'
-                style={{ backgroundColor: '#2ec500', borderRadius: '5px', marginBottom: 15 }}
-                onClick={e =>
-                    generateExcel(AddSalaryColumn, monthReport, dataSource)
-                }
-            >
-                Generate Excel
-                </Button>
-        </div>
-        {!canEdit ?
-                <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} />
-            :
-            <EditableTable column={AddSalaryColumn} getData={getTableData} oldData={dataSource} ablePagination={{ disabled: false }} showData={10} startCount={1} formType={'salary-month'} />
-        }
-        {/* <Table className='t' columns={AddSalaryColumn} dataSource={dataSource} /> */}
-
-        {canEdit?<Button style={{width:150,marginLeft:10}} onClick={updateData} type='primary'>Update</Button>:null}
-        {visiblity?<CustomResult title='อัพเดทข้อมูลเรียบร้อย' countTime={5} visibility={visiblity} />:null}
-
     </>
 }
