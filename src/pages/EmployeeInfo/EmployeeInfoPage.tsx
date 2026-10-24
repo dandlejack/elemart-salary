@@ -1,4 +1,4 @@
-import { Alert, Button, Card, DatePicker, Empty, Form, InputNumber, message, Modal, Select, Skeleton, Space, Tag, Typography } from "antd";
+import { Alert, Button, Card, DatePicker, Empty, Form, InputNumber, message, Modal, Select, Skeleton, Space, Typography } from "antd";
 import { DownloadOutlined, EditOutlined } from "@ant-design/icons";
 import moment from "moment";
 import React, { useEffect, useState } from "react";
@@ -6,6 +6,7 @@ import { EmployeeApi, isResigned } from "../../api/EmployeeApi";
 import { ReportApi } from "../../api/ReportApi";
 import { HeaderComponent } from "../../components/HeaderComponent";
 import { LoadError } from "../../components/LoadError/LoadError";
+import { StatusTag } from "../../components/StatusTag/StatusTag";
 import { Payslip, PAYSLIP_WIDTH, ScaledPreview } from "../../components/Payslip/Payslip";
 import { savePayslipsPdf } from "../../components/Payslip/payslipPdf";
 import { calcSocialSecurity, formatMoney, normalizeName } from '../../utils/Salary'
@@ -105,9 +106,10 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
     }
 
     const header = <HeaderComponent
+        eyebrow='พนักงาน'
         title={fullname || 'ข้อมูลพนักงาน'}
         subTitle={employee ? <Space size={8}>
-            {isResigned(employee) ? <Tag>ลาออก</Tag> : <Tag color='green'>ทำงานอยู่</Tag>}
+            <StatusTag resigned={isResigned(employee)} />
             <span>เงินเดือนปัจจุบัน {employee.current_salary !== undefined && employee.current_salary !== null ? formatMoney(employee.current_salary) + ' บาท' : '-'}</span>
         </Space> : null}
         backPath='/employee'
@@ -125,7 +127,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 <div className='page-toolbar'>
                     <Space>
                         <span>สลิปเดือน</span>
-                        <Select value={reportId || undefined} onChange={(val: string) => changeMonth(val)} style={{ width: 200 }} showSearch optionFilterProp='children'>
+                        <Select value={reportId || undefined} onChange={(val: string) => changeMonth(val)} className='toolbar-select' showSearch optionFilterProp='children'>
                             {reports.map(data => <Select.Option key={data.report_id} value={data.report_id}>{formatMonthReport(data.month_report)}</Select.Option>)}
                         </Select>
                     </Space>
@@ -140,7 +142,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
                 {slipRequest.loading ? <Skeleton active paragraph={{ rows: 8 }} /> : null}
                 {!slipRequest.loading && slipRequest.data && !slipRequest.data.row
                     ? <Alert type='warning' showIcon message='ไม่พบข้อมูลเงินเดือนของพนักงานคนนี้ในเดือนที่เลือก' /> : null}
-                {!slipRequest.loading && slip ? <Card bodyStyle={{ padding: 16 }}>
+                {!slipRequest.loading && slip ? <Card className='payslip-sheet'>
                     <ScaledPreview width={PAYSLIP_WIDTH}><Payslip {...slip} /></ScaledPreview>
                 </Card> : null}
             </>}
@@ -157,7 +159,7 @@ export const EmployeeInfoPage: React.FC<{ match: any }> = ({ match }) => {
         >
             <Form layout='vertical'>
                 <Form.Item label='เงินเดือนใหม่ (บาท)' extra={newSalary ? `ประกันสังคมที่ระบบคำนวณ: ${formatMoney(calcSocialSecurity(newSalary))} บาท` : null}>
-                    <InputNumber autoFocus min={0} style={{ width: '100%' }} value={newSalary as any} onChange={(v: any) => setNewSalary(v)} onPressEnter={updateSalary}
+                    <InputNumber autoFocus min={0} className='full-width' value={newSalary as any} onChange={(v: any) => setNewSalary(v)} onPressEnter={updateSalary}
                         formatter={(v: any) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v: any) => (v || '').replace(/,/g, '')} />
                 </Form.Item>
                 <Typography.Text type='secondary'>มีผลกับเงินเดือนปัจจุบันของพนักงานเท่านั้น รายงานเงินเดือนที่บันทึกไปแล้วไม่เปลี่ยน</Typography.Text>

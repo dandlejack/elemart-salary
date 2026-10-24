@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import './App.css';
 import { Layout } from 'antd'
 import { SiderComponent } from './components/SiderComponent'
 import { Switch, Route } from 'react-router-dom'

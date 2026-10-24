@@ -1,10 +1,11 @@
-import { Button, Dropdown, Menu, Modal, Space, Tag } from "antd"
+import { Button, Dropdown, Menu, Modal, Skeleton, Space } from "antd"
 import { DeleteOutlined, MoreOutlined, UserDeleteOutlined, UserAddOutlined } from "@ant-design/icons"
 import React from "react"
 import { Link } from "react-router-dom"
 import { IEmployeeListItem, isResigned } from "../api/EmployeeApi"
-import { calcSalaryTotals, formatMoney, isNumeric } from "../utils/Salary"
+import { calcSalaryTotals, formatMoney, isNumeric, toNumber } from "../utils/Salary"
 import { formatMonthReport } from "../utils/Month"
+import { StatusTag } from "../components/StatusTag/StatusTag"
 
 // Asks before deleting; the message names what will be deleted and what is lost.
 export const confirmDelete = (title: React.ReactNode, warning: string, onOk: () => Promise<any>) => Modal.confirm({
@@ -34,7 +35,7 @@ export const employeeColumns = ({ onStatusChange, onDelete }: EmployeeColumnActi
         title: 'ชื่อ-สกุล',
         key: 'fullname',
         dataIndex: 'fullname',
-        render: (fullname: string, record: IEmployeeListItem) => <Link to={'/EmployeeInfo/' + record.employee_id}>{fullname}</Link>
+        render: (fullname: string, record: IEmployeeListItem) => <Link className='table-link' to={'/EmployeeInfo/' + record.employee_id}>{fullname}</Link>
     },
     {
         title: 'เงินเดือน',
@@ -50,7 +51,7 @@ export const employeeColumns = ({ onStatusChange, onDelete }: EmployeeColumnActi
         key: 'status',
         dataIndex: 'status',
         width: 120,
-        render: (_: any, record: IEmployeeListItem) => isResigned(record) ? <Tag>ลาออก</Tag> : <Tag color='green'>ทำงานอยู่</Tag>
+        render: (_: any, record: IEmployeeListItem) => <StatusTag resigned={isResigned(record)} />
     },
     {
         title: '',
@@ -78,18 +79,33 @@ export const employeeColumns = ({ onStatusChange, onDelete }: EmployeeColumnActi
     }
 ]
 
-const monthListColumns = (detailPath: string, idField: string, onDelete: (record: any) => void) => [
+// A summary column that may still be loading: `values` maps the record id to its numbers.
+const summaryColumn = (title: string, field: string, idField: string, values: { [id: string]: any } | undefined, format: (value: number) => React.ReactNode = formatMoney) => ({
+    title,
+    key: field,
+    align: 'right' as const,
+    width: 170,
+    render: (_: any, record: any) => {
+        const summary = values && values[record[idField]]
+        if (!summary) return values ? '-' : <Skeleton.Button active size='small' style={{ width: 80 }} />
+        return format(summary[field])
+    }
+})
+
+const monthListColumns = (detailPath: string, idField: string, onDelete: (record: any) => void, summaryColumns: any[] = []) => [
     {
         title: 'เดือน',
         key: 'month_report',
         dataIndex: 'month_report',
-        render: (month: string, record: any) => <Link to={detailPath + record[idField]}>{formatMonthReport(month)}</Link>
+        render: (month: string, record: any) => <Link className='table-link' to={detailPath + record[idField]}>{formatMonthReport(month)}</Link>
     },
+    ...summaryColumns,
     {
         title: '',
         key: 'operation',
         dataIndex: 'operation',
-        width: 160,
+        width: 170,
+        align: 'right' as const,
         render: (_: any, record: any) => (
             <Space>
                 <Link to={detailPath + record[idField]}>
@@ -101,9 +117,45 @@ const monthListColumns = (detailPath: string, idField: string, onDelete: (record
     }
 ]
 
-export const salaryMonthColumns = (onDelete: (record: any) => void) => monthListColumns('/ReportInfo/', 'report_id', onDelete)
+export interface ReportSummary {
+    people: number
+    gross: number
+    net: number
+}
 
-export const pettyCashListColumns = (onDelete: (record: any) => void) => monthListColumns('/PettyCashInfo/', 'pettycash_id', onDelete)
+// `summaries` is undefined while the report totals are still loading.
+export const salaryMonthColumns = (onDelete: (record: any) => void, summaries?: { [reportId: string]: ReportSummary }) =>
+    monthListColumns('/ReportInfo/', 'report_id', onDelete, [
+        summaryColumn('จำนวนคน', 'people', 'report_id', summaries, value => `${value} คน`),
+        summaryColumn('รวมเงินได้', 'gross', 'report_id', summaries),
+        summaryColumn('ยอดจ่ายสุทธิ', 'net', 'report_id', summaries, value => <b>{formatMoney(value)}</b>),
+    ])
+
+// Totals of one petty cash month, from its entries. The balance is computed rather than read from the last
+// row, because older months stored stale running totals (only the edited row used to be recalculated).
+export const pettyCashSummary = (book: any) => {
+    const rows = book.attributes || []
+    const received = rows.reduce((total: number, row: any) => total + toNumber(row.received_cash) + toNumber(row.received_bank), 0)
+    const paid = rows.reduce((total: number, row: any) => total + toNumber(row.paid_cash) + toNumber(row.paid_bank), 0)
+    return { entries: rows.length, received, paid, balance: Math.round((received - paid) * 100) / 100 }
+}
+
+export const pettyCashListColumns = (onDelete: (record: any) => void) => {
+    const column = (title: string, field: string, format: (value: number) => React.ReactNode = formatMoney) => ({
+        title,
+        key: field,
+        align: 'right' as const,
+        width: 170,
+        render: (_: any, record: any) => format((pettyCashSummary(record) as any)[field]),
+    })
+    return monthListColumns('/PettyCashInfo/', 'pettycash_id', onDelete, [
+        column('จำนวนรายการ', 'entries', value => `${value} รายการ`),
+        column('รับรวม', 'received'),
+        column('จ่ายรวม', 'paid'),
+        // A negative balance usually means the month is missing its carried-forward entry.
+        column('คงเหลือ', 'balance', value => <b className={value < 0 ? 'money-negative' : undefined}>{formatMoney(value)}</b>),
+    ])
+}
 
 // A number cell that held text in the imported Excel file is shown in orange with the original text as a tooltip.
 const salaryNumberCell = (dataIndex: string) => (value: any, record: any) => {

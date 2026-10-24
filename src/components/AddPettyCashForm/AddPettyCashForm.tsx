@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { Alert, Button, DatePicker, message, Space, Typography } from 'antd'
 import moment from 'moment'
 import { EditableTable } from '../EditTable/EditableTable'
-import { AddPettyCashColumn } from '../../mockData/mockColumnTable'
+import { AddPettyCashColumn, pettyCashSummary } from '../../mockData/mockColumnTable'
 import { PettyCashApi } from '../../api/PettyCashApi'
 import { currentMonthReport, formatMonthReport, sortNewestFirst } from '../../utils/Month'
-import { formatMoney, toNumber } from '../../utils/Salary'
+import { formatMoney } from '../../utils/Salary'
 
 interface Props {
     // Existing petty cash months (full records), for the duplicate warning and the carried-forward balance.
@@ -22,8 +22,7 @@ export const AddPettyCashForm: React.FC<Props> = ({ existing, onDone, onDirtyCha
 
     // Start the month with the latest month's ending balance carried forward.
     const latest = sortNewestFirst(existing)[0]
-    const latestRows = latest ? (latest.attributes || []) : []
-    const carried = latestRows.length > 0 ? toNumber(latestRows[latestRows.length - 1].pettycash_total) : null
+    const carried = latest && (latest.attributes || []).length > 0 ? pettyCashSummary(latest).balance : null
     useEffect(() => {
         if (carried !== null && carried !== 0) {
             setInitialRows([{ dateInMonth: 1, description: 'ยอดยกมา', received_cash: carried, received_bank: 0, paid_cash: 0, paid_bank: 0, pettycash_total: carried }])
@@ -57,16 +56,16 @@ export const AddPettyCashForm: React.FC<Props> = ({ existing, onDone, onDirtyCha
     }
 
     return <div>
-        <Space style={{ marginBottom: 16 }} align='center'>
+        <Space className='mb-16' align='center' wrap>
             <span>เดือน</span>
             <DatePicker format={'MM/YYYY'} picker="month" allowClear={false} value={month ? moment(month, 'MM/YYYY') : null} onChange={(date: any, dateString: string) => setMonth(dateString)} />
             <Typography.Text type='secondary'>{formatMonthReport(month)}</Typography.Text>
         </Space>
-        {monthExists ? <Alert style={{ marginBottom: 16 }} type='warning' showIcon message={`มีสมุดเงินสดย่อย ${formatMonthReport(month)} อยู่แล้ว — ถ้าบันทึกจะได้ซ้ำ ถ้าต้องการแก้ไขให้เปิดเดือนเดิม`} /> : null}
-        {carried !== null && carried !== 0 && latest ? <Alert style={{ marginBottom: 16 }} type='info' showIcon
+        {monthExists ? <Alert className='mb-16' type='warning' showIcon message={`มีสมุดเงินสดย่อย ${formatMonthReport(month)} อยู่แล้ว — ถ้าบันทึกจะได้ซ้ำ ถ้าต้องการแก้ไขให้เปิดเดือนเดิม`} /> : null}
+        {carried !== null && carried !== 0 && latest ? <Alert className='mb-16' type='info' showIcon
             message={`ใส่ยอดยกมาจาก ${formatMonthReport(latest.month_report)} (${formatMoney(carried)} บาท) เป็นรายการแรกให้แล้ว — แก้ไขหรือลบได้`} /> : null}
         <EditableTable column={AddPettyCashColumn} getData={setRows} oldData={initialRows} showData={0} sticky={false} tableName='petty-cash' addable />
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <div className='form-actions'>
             <Button type='primary' size='large' onClick={onSave} loading={saving} disabled={rows.length === 0}>บันทึกสมุดเงินสดย่อย</Button>
         </div>
     </div>

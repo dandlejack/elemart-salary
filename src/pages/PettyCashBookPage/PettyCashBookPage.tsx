@@ -47,7 +47,7 @@ export const PettyCashBookPage: React.FC = () => {
                     size='middle'
                     pagination={{ pageSize: 12, showSizeChanger: false, showTotal: total => `ทั้งหมด ${total} เดือน` }}
                     locale={{ emptyText: 'ยังไม่มีสมุดเงินสดย่อย' }}
-                    style={{ maxWidth: 720 }}
+                    scroll={{ x: 900 }}
                 />
             </>}
         </div>

@@ -64,17 +64,17 @@ export const AddEmployeeForm: React.FC<Props> = ({ existingNames, onDone }) => {
         </Form.Item>
         <Form.Item label='เงินเดือน (บาท)' name='current_salary' rules={[{ required: true, type: 'number', min: 1, message: 'กรุณากรอกเงินเดือน' }]}
             extra={values.current_salary ? `ประกันสังคมที่ระบบคำนวณ: ${formatMoney(calcSocialSecurity(values.current_salary))} บาท` : null}>
-            <InputNumber min={0} style={{ width: '100%' }} placeholder='เช่น 18,800'
+            <InputNumber min={0} className='full-width' placeholder='เช่น 18,800'
                 formatter={(v: any) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={(v: any) => (v || '').replace(/,/g, '')} />
         </Form.Item>
         {values.firstname || values.lastname ? <Alert
-            style={{ marginBottom: 16 }}
+            className='mb-16'
             type={duplicate ? 'warning' : 'info'}
             showIcon
             message={<>ชื่อในระบบ: <b>{fullname}</b></>}
             description={duplicate ? 'มีพนักงานชื่อนี้อยู่แล้ว' : 'ต้องสะกดตรงกับชื่อในไฟล์ Excel เงินเดือน ระบบจึงจะจับคู่สลิปให้ได้'}
         /> : null}
-        <div style={{ textAlign: 'right' }}>
+        <div className='form-actions form-actions-flush'>
             <Button type='primary' htmlType='submit' loading={saving}>เพิ่มพนักงาน</Button>
         </div>
     </Form>

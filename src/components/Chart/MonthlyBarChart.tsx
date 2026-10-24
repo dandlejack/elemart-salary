@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { BarController, BarElement, CategoryScale, Chart, LinearScale, Tooltip } from 'chart.js'
 import { formatMoney } from '../../utils/Salary'
+import { fontFamily, tokens } from '../../theme/tokens'
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip)
+Chart.defaults.font.family = fontFamily
 
-// Single series, so no legend: the card title names it.
-const SERIES_COLOR = '#2a78d6'
-const GRID_COLOR = '#f0f0f0'
-const AXIS_TEXT = '#8c8c8c'
+// Single series, so no legend: the card title names it. The latest month is the strong bar.
+const SERIES_COLOR = tokens.primaryMuted
+const LATEST_COLOR = tokens.primary
+const GRID_COLOR = tokens.outline
+const AXIS_TEXT = tokens.textMuted
 
 // Baht in compact form for the axis: 1,250,000 -> "1.25 ล้าน", 850,000 -> "850k".
 const compactBaht = (value: number) => {
@@ -33,8 +36,8 @@ export const MonthlyBarChart: React.FC<Props> = ({ labels, values, valueLabel })
                 labels,
                 datasets: [{
                     data: values,
-                    backgroundColor: SERIES_COLOR,
-                    hoverBackgroundColor: '#1f5fae',
+                    backgroundColor: values.map((_, i) => i === values.length - 1 ? LATEST_COLOR : SERIES_COLOR),
+                    hoverBackgroundColor: tokens.primaryStrong,
                     borderRadius: { topLeft: 4, topRight: 4 } as any,
                     borderSkipped: 'bottom',
                     maxBarThickness: 40,
@@ -49,6 +52,9 @@ export const MonthlyBarChart: React.FC<Props> = ({ labels, values, valueLabel })
                     legend: { display: false },
                     tooltip: {
                         displayColors: false,
+                        backgroundColor: tokens.onBackground,
+                        cornerRadius: 10,
+                        padding: 10,
                         callbacks: { label: ctx => `${valueLabel} ${formatMoney(ctx.parsed.y)} บาท` },
                     },
                 },

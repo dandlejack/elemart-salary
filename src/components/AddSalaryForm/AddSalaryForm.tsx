@@ -213,7 +213,7 @@ export const AddSalaryForm: React.FC<Props> = ({ existingMonths, onDone, onDirty
         const names = dataTable.map(row => normalizeName(row.fullname))
         const duplicates = Array.from(new Set(names.filter((name, index) => names.indexOf(name) !== index)))
         const skipped = [skippedBlank > 0 ? `ข้ามแถวว่าง ${skippedBlank} แถว` : '', skippedTotal > 0 ? `ข้ามแถวยอดรวม ${skippedTotal} แถว` : ''].filter(Boolean).join(', ')
-        return <Space direction='vertical' style={{ width: '100%', marginBottom: 16 }}>
+        return <Space direction='vertical' className='full-width mb-16'>
             <Alert
                 type={unmatched.length > 0 ? 'warning' : 'success'}
                 showIcon
@@ -241,30 +241,30 @@ export const AddSalaryForm: React.FC<Props> = ({ existingMonths, onDone, onDirty
     const step = dataTable.length === 0 ? 1 : 2
 
     return <div>
-        <Steps size='small' current={step} style={{ marginBottom: 24 }}>
+        <Steps size='small' current={step} className='mb-24'>
             <Steps.Step title='เลือกเดือน' />
             <Steps.Step title='นำเข้าไฟล์ Excel' />
             <Steps.Step title='ตรวจสอบและบันทึก' />
         </Steps>
-        <Space style={{ marginBottom: 16 }} align='center'>
+        <Space className='mb-16' align='center' wrap>
             <span>เดือนของรายงาน</span>
             <DatePicker format={'MM/YYYY'} picker="month" allowClear={false} value={monthPicker ? moment(monthPicker, 'MM/YYYY') : null} onChange={(date: any, dateString: string) => changeMonth(dateString)} />
             <Typography.Text type='secondary'>{formatMonthReport(monthPicker)}</Typography.Text>
         </Space>
-        {monthExists ? <Alert style={{ marginBottom: 16 }} type='warning' showIcon message={`มีรายงานเงินเดือน ${formatMonthReport(monthPicker)} อยู่แล้ว — ถ้าบันทึกจะได้รายงานซ้ำ ถ้าต้องการแก้ไขให้เปิดรายงานเดิมจากหน้ารายงานเงินเดือน`} /> : null}
-        <Upload.Dragger accept='.xlsx,.xls' showUploadList={false} beforeUpload={fileHandler} style={{ marginBottom: 8 }}>
+        {monthExists ? <Alert className='mb-16' type='warning' showIcon message={`มีรายงานเงินเดือน ${formatMonthReport(monthPicker)} อยู่แล้ว — ถ้าบันทึกจะได้รายงานซ้ำ ถ้าต้องการแก้ไขให้เปิดรายงานเดิมจากหน้ารายงานเงินเดือน`} /> : null}
+        <Upload.Dragger accept='.xlsx,.xls' showUploadList={false} beforeUpload={fileHandler}>
             <p className='ant-upload-drag-icon'><InboxOutlined /></p>
             <p className='ant-upload-text'>{importSummary ? `ไฟล์ปัจจุบัน: ${importSummary.fileName} — คลิกหรือลากไฟล์ใหม่มาวางเพื่อเปลี่ยน` : 'คลิกหรือลากไฟล์ Excel เงินเดือนมาวางที่นี่'}</p>
             <p className='ant-upload-hint'>ข้อมูลเริ่มที่แถวที่ 4: ลำดับ, ชื่อ, สกุล, {EXCEL_COLUMNS.map(([, , title]) => title).join(', ')}</p>
         </Upload.Dragger>
-        <div style={{ marginBottom: 16 }}>
+        <div className='upload-template mb-16'>
             <Button type='link' icon={<DownloadOutlined />} style={{ paddingLeft: 0 }} onClick={() => downloadTemplate(employees, monthPicker)}>
                 ดาวน์โหลดแบบฟอร์ม Excel (ใส่ชื่อและเงินเดือนพนักงานที่ทำงานอยู่ให้แล้ว)
             </Button>
         </div>
         {importSummaryAlerts()}
         {dataTable.length > 0 ? <EditableTable column={AddSalaryColumn} getData={setdataTable} oldData={dataTable} showData={0} sticky={false} tableName='salary-table' summary={salarySummary(AddSalaryColumn)} rowClassName={(record: IDataProps) => record.employees_id ? '' : 'row-warning'} /> : null}
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <div className='form-actions'>
             <Button type='primary' size='large' onClick={onSave} loading={saving} disabled={dataTable.length === 0}>
                 บันทึกรายงานเงินเดือน{dataTable.length > 0 ? ` (${dataTable.length} คน)` : ''}
             </Button>

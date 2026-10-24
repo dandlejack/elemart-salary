@@ -136,6 +136,6 @@ export const EditableTable: React.FC<TableProps> = (props) => {
             summary={props.summary}
             rowClassName={props.rowClassName}
         />
-        {props.addable ? <Button type='dashed' block icon={<PlusOutlined />} onClick={handleAdd} style={{ marginTop: 8 }}>เพิ่มรายการ</Button> : null}
+        {props.addable ? <Button type='dashed' block icon={<PlusOutlined />} onClick={handleAdd}>เพิ่มรายการ</Button> : null}
     </div>
 }

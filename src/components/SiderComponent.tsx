@@ -34,7 +34,6 @@ export const SiderComponent: React.FC = () => {
             <Menu
                 mode="inline"
                 selectedKeys={[activePath]}
-                style={{ borderRight: 0 }}
             >
                 {RoutePath.filter((page: Page) => page.isMenu).map((page: Page) =>
                     <Menu.Item key={page.path} icon={page.icon} onClick={() => history.push(page.path)}>{page.pathName}</Menu.Item>

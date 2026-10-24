@@ -66,6 +66,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
     const namelessRows = saved.filter(isNamelessRow)
     const employees = saved.filter(row => !isNamelessRow(row))
     const netTotal = employees.reduce((total, row) => total + calcSalaryTotals(row).net, 0)
+    const grossTotal = employees.reduce((total, row) => total + calcSalaryTotals(row).gross, 0)
     const shownRows = search.trim() === ''
         ? saved
         : saved.filter((row: any) => normalizeName(row.fullname || '').includes(normalizeName(search)))
@@ -84,6 +85,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
     return <>
         <Prompt when={dirty} message={DISCARD_MESSAGE} />
         <HeaderComponent
+            eyebrow='รายงานเงินเดือน'
             title={monthLabel ? `เงินเดือน ${monthLabel}` : 'รายงานเงินเดือน'}
             subTitle={report ? `${employees.length} คน · ยอดสุทธิ ${formatMoney(netTotal)} บาท` : null}
             backPath='/salary-list'
@@ -96,7 +98,7 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
             {report && !editing && namelessRows.length > 0 ? <Alert
                 type='warning'
                 showIcon
-                style={{ marginBottom: 16 }}
+                className='mb-16'
                 message={`พบ ${namelessRows.length} แถวที่ไม่มีชื่อพนักงาน (แถวสีส้ม)`}
                 description='น่าจะเป็นแถวยอดรวมที่ติดมาจากไฟล์ Excel ตอนนำเข้า — ยอดรวม สลิป และไฟล์ Excel ที่ส่งออกไม่นับแถวเหล่านี้แล้ว แนะนำให้ลบออกจากรายงาน'
                 action={<Button size='small' onClick={() => startEdit(saved.filter(row => !isNamelessRow(row)))}>ลบแถวเหล่านี้</Button>}
@@ -104,12 +106,17 @@ export const SalaryInfoPage: React.FC<{ match: any }> = ({ match }) => {
             {report && editing ? <Alert
                 type='info'
                 showIcon
-                style={{ marginBottom: 16 }}
+                className='mb-16'
                 message='โหมดแก้ไข: คลิกที่ช่องเพื่อแก้ไข — Tab ไปช่องถัดไป, Enter ไปแถวถัดไป, Esc ยกเลิกช่องนั้น'
                 description={dirty ? 'มีการแก้ไขที่ยังไม่ได้บันทึก กด "บันทึกการแก้ไข" ด้านบนเมื่อเสร็จ' : null}
             /> : null}
+            {report && !editing ? <div className='summary-strip'>
+                <span className='summary-chip'><span className='summary-chip-value'>{employees.length}</span> คน</span>
+                <span className='summary-chip'><span className='summary-chip-label'>รวมเงินได้</span><span className='summary-chip-value'>{formatMoney(grossTotal)}</span> บาท</span>
+                <span className='summary-chip'><span className='summary-chip-label'>ยอดสุทธิ</span><span className='summary-chip-value'>{formatMoney(netTotal)}</span> บาท</span>
+            </div> : null}
             {report && !editing ? <div className='page-toolbar'>
-                <Input.Search allowClear placeholder='ค้นหาชื่อ' style={{ width: 260 }} onChange={e => setSearch(e.target.value)} />
+                <Input.Search allowClear placeholder='ค้นหาชื่อ' className='toolbar-search' onChange={e => setSearch(e.target.value)} />
                 {search ? <Typography.Text type='secondary'>พบ {shownRows.length} คน</Typography.Text> : null}
             </div> : null}
             {report && !editing ?

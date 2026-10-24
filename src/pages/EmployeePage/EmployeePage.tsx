@@ -72,8 +72,8 @@ export const EmployeePage: React.FC = () => {
             {error ? <LoadError error={error} onRetry={reload} /> : null}
             {error && !data ? null : <>
                 <div className='page-toolbar'>
-                    <Input.Search allowClear placeholder='ค้นหาชื่อพนักงาน' style={{ width: 280 }} onChange={e => setSearch(e.target.value)} />
-                    <Radio.Group value={statusFilter} onChange={e => setStatusFilter(e.target.value)} optionType='button'>
+                    <Input.Search allowClear placeholder='ค้นหาชื่อพนักงาน' className='toolbar-search' onChange={e => setSearch(e.target.value)} />
+                    <Radio.Group className='segmented' value={statusFilter} onChange={e => setStatusFilter(e.target.value)} optionType='button'>
                         <Radio.Button value='active'>ทำงานอยู่ ({counts.active})</Radio.Button>
                         <Radio.Button value='resigned'>ลาออก ({counts.resigned})</Radio.Button>
                         <Radio.Button value='all'>ทั้งหมด ({counts.all})</Radio.Button>

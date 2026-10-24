@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react'
-import { Alert, Button, Card, Col, Empty, Row, Skeleton, Statistic, Table, Typography } from 'antd'
-import { ArrowDownOutlined, ArrowUpOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Card, Col, Empty, Row, Skeleton, Table } from 'antd'
+import { ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, FileTextOutlined, PlusOutlined, RightOutlined, SafetyCertificateOutlined, TeamOutlined, WalletOutlined } from '@ant-design/icons'
 import { Link, useHistory } from 'react-router-dom'
 import { HeaderComponent } from '../../components/HeaderComponent'
 import { LoadError } from '../../components/LoadError/LoadError'
@@ -21,12 +21,61 @@ const shortMonth = (month: string) => {
     return `${THAI_MONTHS[m - 1]} ${String(year + 543).slice(-2)}`
 }
 
+// Neutral colour on purpose: payroll going up or down is neither good nor bad.
 const Delta: React.FC<{ change: number | null, previousLabel: string }> = ({ change, previousLabel }) => {
-    if (change === null) return <Typography.Text type='secondary'>ไม่มีเดือนก่อนหน้าให้เทียบ</Typography.Text>
+    if (change === null) return <span className='kpi-sub'>ไม่มีเดือนก่อนหน้าให้เทียบ</span>
     const up = change >= 0
-    return <Typography.Text type='secondary'>
+    return <span className='kpi-sub'>
         {up ? <ArrowUpOutlined /> : <ArrowDownOutlined />} {Math.abs(change).toFixed(1)}% จาก {previousLabel}
-    </Typography.Text>
+    </span>
+}
+
+const KpiCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, unit: string, sub: React.ReactNode }> = ({ icon, label, value, unit, sub }) =>
+    <div className='kpi-card'>
+        <span className='kpi-icon'>{icon}</span>
+        <span className='kpi-label'>{label}</span>
+        <span className='kpi-value'>{value}<span className='kpi-unit'>{unit}</span></span>
+        {sub}
+    </div>
+
+// The month's payroll steps. Only step 01 has a known state (this month's report exists);
+// the others just open the report, since the app does not record whether they were done.
+const MonthWorkflow: React.FC<{ reportPath: string | null, onCreate: () => void }> = ({ reportPath, onCreate }) => {
+    const done = reportPath !== null
+    const steps = ['ตรวจสอบและแก้ไข', 'ออกสลิปเงินเดือน', 'ส่งออก Excel']
+    return <section className='workflow' aria-label='ขั้นตอนประจำเดือน'>
+        <span className='eyebrow'>ขั้นตอนประจำเดือน</span>
+        <ol className='workflow-list'>
+            <li>
+                {done
+                    ? <Link className='workflow-step is-done' to={reportPath!}>
+                        <span className='workflow-badge' aria-hidden><CheckOutlined /></span>
+                        <span className='workflow-title'>สร้าง/นำเข้ารายงาน</span>
+                        <span className='workflow-state'>เสร็จแล้ว</span>
+                    </Link>
+                    : <button type='button' className='workflow-step' onClick={onCreate}>
+                        <span className='workflow-badge'>01</span>
+                        <span className='workflow-title'>สร้าง/นำเข้ารายงาน</span>
+                        <RightOutlined className='workflow-arrow' />
+                    </button>}
+            </li>
+            {steps.map((title, index) => {
+                const badge = <span className='workflow-badge'>{`0${index + 2}`}</span>
+                return <li key={title}>
+                    {done
+                        ? <Link className='workflow-step' to={reportPath!}>
+                            {badge}
+                            <span className='workflow-title'>{title}</span>
+                            <RightOutlined className='workflow-arrow' />
+                        </Link>
+                        : <span className='workflow-step is-disabled' aria-disabled>
+                            {badge}
+                            <span className='workflow-title'>{title}</span>
+                        </span>}
+                </li>
+            })}
+        </ol>
+    </section>
 }
 
 export const DashboardPage: React.FC = () => {
@@ -69,71 +118,86 @@ export const DashboardPage: React.FC = () => {
             net: rows.reduce((total: number, row: any) => total + calcSalaryTotals(row).net, 0),
         }
     }) : []
+    // People in this month's report, counted the same way as the recent reports table.
+    const thisMonthFull = thisMonthReport && data ? data.reports.find(r => r.report_id === thisMonthReport.report_id) : undefined
+    const thisMonthPeople = thisMonthFull ? (thisMonthFull.attributes || []).filter((row: any) => !isNamelessRow(row)).length : null
+    const thisMonthPath = thisMonthReport ? '/ReportInfo/' + thisMonthReport.report_id : null
+    const createReport = () => history.push('/salary-list', { create: true })
 
     const header = <HeaderComponent title='ภาพรวม' subTitle={latest ? `ข้อมูลล่าสุด ${formatMonthReport(latest.month)}` : null} />
-    if (error) return <>{header}<div className='page-body'><LoadError error={error} onRetry={reload} /></div></>
-    if (loading && !data) return <>{header}<div className='page-body'><Skeleton active paragraph={{ rows: 12 }} /></div></>
+    if (error) return <>{header}<div className='page-body'><div className='page-container'><LoadError error={error} onRetry={reload} /></div></div></>
+    if (loading && !data) return <>{header}<div className='page-body'><div className='page-container'><Skeleton active paragraph={{ rows: 12 }} /></div></div></>
 
     return <>
         {header}
         <div className='page-body'>
-            {thisMonthReport
-                ? <Alert type='success' showIcon style={{ marginBottom: 16 }}
-                    message={<>สร้างรายงานเงินเดือน {formatMonthReport(thisMonth)} แล้ว — <Link to={'/ReportInfo/' + thisMonthReport.report_id}>เปิดรายงาน</Link></>} />
-                : <Alert type='info' showIcon style={{ marginBottom: 16 }}
-                    message={`ยังไม่ได้สร้างรายงานเงินเดือน ${formatMonthReport(thisMonth)}`}
-                    action={<Button type='primary' size='small' icon={<PlusOutlined />} onClick={() => history.push('/salary-list', { create: true })}>สร้างรายงาน</Button>} />}
+            <div className='page-container'>
+                <div className='dash-top'>
+                    <section className='dash-hero'>
+                        <span className='eyebrow'>เงินเดือนประจำเดือน</span>
+                        <h2 className='dash-hero-title'>{formatMonthReport(thisMonth)}</h2>
+                        <p className='dash-hero-text'>
+                            {thisMonthReport
+                                ? `สร้างรายงานแล้ว${thisMonthPeople !== null ? ` · ${thisMonthPeople} คน` : ''}`
+                                : 'ยังไม่ได้สร้างรายงาน — เริ่มจากนำเข้าไฟล์ Excel'}
+                        </p>
+                        <div className='dash-hero-actions'>
+                            {thisMonthPath
+                                ? <Button type='primary' size='large' icon={<FileTextOutlined />} onClick={() => history.push(thisMonthPath)}>เปิดรายงาน</Button>
+                                : <Button type='primary' size='large' icon={<PlusOutlined />} onClick={createReport}>สร้างรายงาน</Button>}
+                            <Button size='large' onClick={() => history.push('/salary-list')}>ดูรายงานทั้งหมด</Button>
+                        </div>
+                    </section>
+                    <MonthWorkflow reportPath={thisMonthPath} onCreate={createReport} />
+                </div>
 
-            {!latest ? <Empty description='ยังไม่มีรายงานเงินเดือน' /> : <>
-                <Row gutter={[16, 16]} className='kpi-row' style={{ marginBottom: 16 }}>
-                    <Col xs={24} sm={12} xl={6}>
-                        <Card>
-                            <Statistic title={`ยอดจ่ายสุทธิ ${formatMonthReport(latest.month)}`} value={formatMoney(latest.net)} suffix='บาท' />
-                            <Delta change={percentChange(latest.net, previous?.net)} previousLabel={previousLabel} />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} xl={6}>
-                        <Card>
-                            <Statistic title='รวมเงินได้ (ก่อนหัก)' value={formatMoney(latest.gross)} suffix='บาท' />
-                            <Delta change={percentChange(latest.gross, previous?.gross)} previousLabel={previousLabel} />
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} xl={6}>
-                        <Card>
-                            <Statistic title='ประกันสังคม / ภาษีหัก ณ ที่จ่าย' value={formatMoney(latest.socialSecurity)} suffix={`/ ${formatMoney(latest.withholdingTax)}`} />
-                            <Typography.Text type='secondary'>ยอดที่ต้องนำส่งของเดือนนี้ (ส่วนของพนักงาน)</Typography.Text>
-                        </Card>
-                    </Col>
-                    <Col xs={24} sm={12} xl={6}>
-                        <Card>
-                            <Statistic title='จำนวนคนที่จ่าย' value={latest.headcount} suffix='คน' />
-                            <Typography.Text type='secondary'>พนักงานที่ทำงานอยู่ในระบบ {activeEmployees} คน</Typography.Text>
-                        </Card>
-                    </Col>
-                </Row>
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} xl={16}>
-                        <Card title={`ยอดจ่ายสุทธิรายเดือน (${chart.labels.length} เดือนล่าสุด)`}>
-                            <MonthlyBarChart labels={chart.labels} values={chart.values} valueLabel='ยอดจ่ายสุทธิ' />
-                        </Card>
-                    </Col>
-                    <Col xs={24} xl={8}>
-                        <Card title='รายงานล่าสุด' extra={<Link to='/salary-list'>ดูทั้งหมด</Link>} bodyStyle={{ padding: 0 }}>
-                            <Table
-                                rowKey='report_id'
-                                size='small'
-                                pagination={false}
-                                dataSource={recentRows}
-                                columns={[
-                                    { title: 'เดือน', dataIndex: 'month_report', render: (m: string, r: any) => <Link to={'/ReportInfo/' + r.report_id}>{formatMonthReport(m)}</Link> },
-                                    { title: 'คน', dataIndex: 'people', align: 'right' as const },
-                                    { title: 'ยอดสุทธิ', dataIndex: 'net', align: 'right' as const, render: (v: number) => formatMoney(v) },
-                                ]}
-                            />
-                        </Card>
-                    </Col>
-                </Row>
-            </>}
+                {!latest ? <Card><Empty description='ยังไม่มีรายงานเงินเดือน' /></Card> : <>
+                    <Row gutter={[16, 16]} className='kpi-row'>
+                        <Col xs={24} sm={12} xl={6}>
+                            <div className='kpi-outcome'>
+                                <span className='kpi-icon'><WalletOutlined /></span>
+                                <span className='kpi-label'>ยอดจ่ายสุทธิ {formatMonthReport(latest.month)}</span>
+                                <span className='kpi-value'>{formatMoney(latest.net)}<span className='kpi-unit'>บาท</span></span>
+                                <Delta change={percentChange(latest.net, previous?.net)} previousLabel={previousLabel} />
+                            </div>
+                        </Col>
+                        <Col xs={24} sm={12} xl={6}>
+                            <KpiCard icon={<FileTextOutlined />} label='รวมเงินได้ (ก่อนหัก)' value={formatMoney(latest.gross)} unit='บาท'
+                                sub={<Delta change={percentChange(latest.gross, previous?.gross)} previousLabel={previousLabel} />} />
+                        </Col>
+                        <Col xs={24} sm={12} xl={6}>
+                            <KpiCard icon={<SafetyCertificateOutlined />} label='ประกันสังคมที่ต้องนำส่ง (ส่วนพนักงาน)' value={formatMoney(latest.socialSecurity)} unit='บาท'
+                                sub={<span className='kpi-sub'>ภาษีหัก ณ ที่จ่าย {formatMoney(latest.withholdingTax)} บาท</span>} />
+                        </Col>
+                        <Col xs={24} sm={12} xl={6}>
+                            <KpiCard icon={<TeamOutlined />} label='จำนวนคนที่จ่าย' value={latest.headcount} unit='คน'
+                                sub={<span className='kpi-sub'>พนักงานที่ทำงานอยู่ในระบบ {activeEmployees} คน</span>} />
+                        </Col>
+                    </Row>
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} xl={16}>
+                            <Card title={`ยอดจ่ายสุทธิรายเดือน (${chart.labels.length} เดือนล่าสุด)`}>
+                                <MonthlyBarChart labels={chart.labels} values={chart.values} valueLabel='ยอดจ่ายสุทธิ' />
+                            </Card>
+                        </Col>
+                        <Col xs={24} xl={8}>
+                            <Card title='รายงานล่าสุด' extra={<Link to='/salary-list'>ดูทั้งหมด</Link>} className='card-flush'>
+                                <Table
+                                    rowKey='report_id'
+                                    size='small'
+                                    pagination={false}
+                                    dataSource={recentRows}
+                                    columns={[
+                                        { title: 'เดือน', dataIndex: 'month_report', render: (m: string, r: any) => <Link className='table-link' to={'/ReportInfo/' + r.report_id}>{formatMonthReport(m)}</Link> },
+                                        { title: 'คน', dataIndex: 'people', align: 'right' as const },
+                                        { title: 'ยอดสุทธิ', dataIndex: 'net', align: 'right' as const, render: (v: number) => formatMoney(v) },
+                                    ]}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
+                </>}
+            </div>
         </div>
     </>
 }

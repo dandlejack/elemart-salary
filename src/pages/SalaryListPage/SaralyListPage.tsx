@@ -6,15 +6,31 @@ import { ReportApi } from '../../api/ReportApi'
 import { AddSalaryForm } from '../../components/AddSalaryForm/AddSalaryForm'
 import { HeaderComponent } from '../../components/HeaderComponent'
 import { LoadError } from '../../components/LoadError/LoadError'
-import { confirmDelete, salaryMonthColumns } from '../../mockData/mockColumnTable'
+import { confirmDelete, ReportSummary, salaryMonthColumns } from '../../mockData/mockColumnTable'
 import { formatMonthReport, sortNewestFirst } from '../../utils/Month'
+import { calcSalaryTotals, isNamelessRow } from '../../utils/Salary'
 import { useRequest } from '../../utils/useRequest'
 import { confirmDiscard } from '../../utils/confirmDiscard'
 import { useUnsavedChangesWarning } from '../../utils/useUnsavedChangesWarning'
 
 export const SaralyListPage: React.FC = () => {
-    const { data, loading, error, reload } = useRequest(async () => sortNewestFirst(await ReportApi.findSalaryList({})))
+    const { data, loading, error, reload: reloadList } = useRequest(async () => sortNewestFirst(await ReportApi.findSalaryList({})))
     const reports = data || []
+    // People and totals per report; loaded separately (full reports are larger) so the list shows right away.
+    const summaryRequest = useRequest(async () => {
+        const summaries: { [reportId: string]: ReportSummary } = {}
+        const all: any[] = await ReportApi.findAllReports({})
+        all.forEach(report => {
+            const rows = (report.attributes || []).filter((row: any) => !isNamelessRow(row))
+            summaries[report.report_id] = {
+                people: rows.length,
+                gross: rows.reduce((total: number, row: any) => total + calcSalaryTotals(row).gross, 0),
+                net: rows.reduce((total: number, row: any) => total + calcSalaryTotals(row).net, 0),
+            }
+        })
+        return summaries
+    })
+    const reload = () => { reloadList(); summaryRequest.reload() }
     // The dashboard links here with { create: true } to start a new report right away.
     const location = useLocation<{ create?: boolean } | undefined>()
     const [creating, setCreating] = useState(!!(location.state && location.state.create))
@@ -44,13 +60,13 @@ export const SaralyListPage: React.FC = () => {
             {error && !data ? null : <>
                 <Table
                     rowKey='report_id'
-                    columns={salaryMonthColumns(deleteReport)}
+                    columns={salaryMonthColumns(deleteReport, summaryRequest.error ? {} : summaryRequest.data)}
                     dataSource={reports}
                     loading={loading}
                     size='middle'
                     pagination={{ pageSize: 12, showSizeChanger: false, showTotal: total => `ทั้งหมด ${total} รายงาน` }}
                     locale={{ emptyText: 'ยังไม่มีรายงานเงินเดือน' }}
-                    style={{ maxWidth: 720 }}
+                    scroll={{ x: 820 }}
                 />
             </>}
         </div>

@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
 
 export interface HeaderProps {
+    // Small label above the title naming the section, e.g. "รายงานเงินเดือน" on a report page.
+    eyebrow?: ReactNode
     title: ReactNode
     subTitle?: ReactNode
     backPath?: string
