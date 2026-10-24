@@ -78,6 +78,13 @@ html body {
   background: var(--ds-background);
   line-height: 1.6;
 }
+/* The payslip (A4.css) is a print layout: keep the type metrics it was laid out with, so the
+   preview and the html2canvas PDF do not grow or change colour with the app's body text. */
+.payslip {
+  font-family: 'IBM Plex Sans Thai', -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  line-height: 1.5715;
+  color: #1d2939;
+}
 body > #root > section {
   height: 100vh;
 }
@@ -324,8 +331,16 @@ body .contentHeader-back:hover {
   body .contentHeader-text {
     font-size: 18px;
   }
+  /* The back button already says where the page belongs; the title keeps the room instead */
+  .contentHeader .eyebrow {
+    display: none;
+  }
+  .contentHeader-title {
+    min-width: 45%;
+  }
   /* Header actions scroll sideways rather than wrap, so the header keeps its 64px height */
   .contentHeader-extra {
+    flex: 1 1 0;
     overflow-x: auto;
     scrollbar-width: none;
   }
